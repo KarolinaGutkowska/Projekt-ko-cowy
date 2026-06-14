@@ -36,10 +36,28 @@ class HUBA:
 
         return df
 
-    #sprawdzanie ilości pustych komórek
+    def normalize_decimal_separator(self, df):
+        changes = 0
+
+        for column in df.columns:
+            if df[column].dtype == "object":
+                for idx, value in df[column].items():
+                    if isinstance(value, str):
+                        if value.replace(",", "").replace(".", "").isdigit():
+                            new_value = value.replace(",", ".")
+
+                            if new_value != value:
+                                df.at[idx, column] = new_value
+                                changes += 1
+
+        self.report.append(
+            f"Zamieniono przecinki dziesiętne na kropki w {changes} komórkach."
+        )
+
+        return df
+
     def remove_sparse_columns(self, df, threshold=0.5):
         rows = len(df)
-
         columns_to_remove = []
 
         for column in df.columns:
@@ -62,7 +80,17 @@ class HUBA:
 
         return df
 
-    #Wykrywanie podejrzanych wartości (wartości ujemne, wartości odstające)
+    def remove_duplicates(self, df):
+        duplicates_count = df.duplicated().sum()
+
+        if duplicates_count > 0:
+            df = df.drop_duplicates()
+            self.report.append(f"Usunięto {duplicates_count} zduplikowanych wierszy.")
+        else:
+            self.report.append("Nie wykryto zduplikowanych wierszy.")
+
+        return df
+
     def detect_suspicious_values(self, df):
         for column in df.columns:
             if pd.api.types.is_numeric_dtype(df[column]):
@@ -81,7 +109,7 @@ class HUBA:
                 upper_limit = q3 + 1.5 * iqr
 
                 outliers_count = (
-                        (df[column] < lower_limit) | (df[column] > upper_limit)
+                    (df[column] < lower_limit) | (df[column] > upper_limit)
                 ).sum()
 
                 if outliers_count > 0:
@@ -89,65 +117,14 @@ class HUBA:
                         f"Kolumna '{column}' zawiera {outliers_count} wartości odstających."
                     )
 
-    #Zamiana przecinków na kropki
-    def normalize_decimal_separator(self, df):
-            changes = 0
-
-            for column in df.columns:
-                if df[column].dtype == "object":
-
-                    for idx, value in df[column].items():
-
-                        if isinstance(value, str):
-
-                            if value.replace(",", "").replace(".", "").isdigit():
-
-                                new_value = value.replace(",", ".")
-
-                                if new_value != value:
-                                    df.at[idx, column] = new_value
-                                    changes += 1
-
-            self.report.append(
-                f"Zamieniono przecinki dziesiętne na kropki w {changes} komórkach."
-            )
-
-
-    #Usuwanie duplikatów
-    def remove_duplicates(self, df):
-        duplicates_count = df.duplicated().sum()
-
-        if duplicates_count > 0:
-            df = df.drop_duplicates()
-            self.report.append(f"Usunięto {duplicates_count} zduplikowanych wierszy.")
-        else:
-            self.report.append("Nie wykryto zduplikowanych wierszy.")
-
         return df
 
-
-
-
-
-
-    def run(self, input_file, output_file):
+    def run(self, input_file, output_file=None):
         df = self.load_data(input_file)
 
-        #Zamiana przecinków na kropki
         df = self.normalize_decimal_separator(df)
-
-        # Usuwanie kolumn z dużą liczbą braków
         df = self.remove_sparse_columns(df)
-
-        #Usuwanie duplikatów
         df = self.remove_duplicates(df)
-
-        #Wykrywanie podejrzanych wartości
         df = self.detect_suspicious_values(df)
-
-        # Walidacja
-        # Czyszczenie
-        # Normalizacja
-        # Raport
 
         return df
