@@ -119,16 +119,11 @@ class HUBA:
 
         return df
 
-    #Wykrywanie niewłaściwych typów danych
+    # Wykrywanie niewłaściwych typów danych
     def detect_invalid_data_types(self, df):
         for column in df.columns:
-
             if df[column].dtype == "object":
-
-                numeric_version = pd.to_numeric(
-                    df[column],
-                    errors="coerce"
-                )
+                numeric_version = pd.to_numeric(df[column], errors="coerce")
 
                 invalid_count = (
                         numeric_version.isna().sum()
@@ -144,12 +139,47 @@ class HUBA:
 
         return df
 
-    def run(self, input_file, output_file=None):
+    # Zapisywanie oczyszczonego pliku
+    def save_clean_data(self, df, output_file):
+        path = Path(output_file)
+
+        if path.suffix.lower() == ".csv":
+            df.to_csv(path, index=False)
+
+        elif path.suffix.lower() in [".xlsx", ".xls"]:
+            df.to_excel(path, index=False)
+
+        else:
+            raise ValueError(
+                "Obsługiwane formaty zapisu to tylko: .csv, .xlsx, .xls"
+            )
+
+        self.report.append(
+            f"Zapisano oczyszczone dane do pliku: {output_file}"
+        )
+
+    # Zapisywanie raportu
+    def save_report(self, report_file):
+        with open(report_file, "w", encoding="utf-8") as file:
+            file.write("=== RAPORT HUBA ===\n\n")
+
+            for line in self.report:
+                file.write(line + "\n")
+
+        self.report.append(
+            f"Zapisano raport do pliku: {report_file}"
+        )
+
+    def run(self, input_file, output_file, report_file):
         df = self.load_data(input_file)
+
         df = self.detect_invalid_data_types(df)
         df = self.normalize_decimal_separator(df)
         df = self.remove_sparse_columns(df)
         df = self.remove_duplicates(df)
         df = self.detect_suspicious_values(df)
+
+        self.save_clean_data(df, output_file)
+        self.save_report(report_file)
 
         return df

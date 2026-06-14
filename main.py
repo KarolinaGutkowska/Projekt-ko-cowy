@@ -4,10 +4,17 @@ from HUBA.huba import HUBA
 def main():
     huba = HUBA()
 
-    df = huba.load_data("dane.csv")
+    clean_df = huba.run(
+        "dane.xlsx",
+        "dane_clean.xlsx",
+        "huba_report.txt"
+    )
 
-    print(df.head())
-    print(huba.report)
+    print(clean_df.head())
+
+    print("\n=== RAPORT HUBA ===")
+    for line in huba.report:
+        print(line)
 
 
 if __name__ == "__main__":
