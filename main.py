@@ -25,6 +25,9 @@ def main():
     print("\n=== STATYSTYKI OPISOWE ===")
     print(results["descriptive_statistics"])
 
+    print("\n=== KORELACJE PEARSONA ===")
+    print(results["correlations"])
+
     print("\n=== RAPORT STATYSTYCZNY ===")
     for line in stats_engine.report:
         print(line)
