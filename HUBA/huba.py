@@ -62,11 +62,43 @@ class HUBA:
 
         return df
 
+    #Wykrywanie podejrzanych wartości (wartości ujemne, wartości odstające)
+    def detect_suspicious_values(self, df):
+        for column in df.columns:
+            if pd.api.types.is_numeric_dtype(df[column]):
+                negative_count = (df[column] < 0).sum()
+
+                if negative_count > 0:
+                    self.report.append(
+                        f"Kolumna '{column}' zawiera {negative_count} wartości ujemnych."
+                    )
+
+                q1 = df[column].quantile(0.25)
+                q3 = df[column].quantile(0.75)
+                iqr = q3 - q1
+
+                lower_limit = q1 - 1.5 * iqr
+                upper_limit = q3 + 1.5 * iqr
+
+                outliers_count = (
+                        (df[column] < lower_limit) | (df[column] > upper_limit)
+                ).sum()
+
+                if outliers_count > 0:
+                    self.report.append(
+                        f"Kolumna '{column}' zawiera {outliers_count} wartości odstających."
+                    )
+
+        return df
+
     def run(self, input_file, output_file):
         df = self.load_data(input_file)
 
         # Usuwanie kolumn z dużą liczbą braków
         df = self.remove_sparse_columns(df)
+
+        #wykrywanie podejrzanych wartości
+        df = self.detect_suspicious_values(df)
 
         # Walidacja
         # Czyszczenie
