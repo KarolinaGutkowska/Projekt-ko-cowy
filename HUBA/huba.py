@@ -170,11 +170,24 @@ class HUBA:
             f"Zapisano raport do pliku: {report_file}"
         )
 
+    #Usuwanie pustych wierszy
+    def remove_empty_rows(self, df):
+        empty_rows_count = df.isna().all(axis=1).sum()
+
+        if empty_rows_count > 0:
+            df = df.dropna(how="all")
+            self.report.append(f"Usunięto {empty_rows_count} całkowicie pustych wierszy.")
+        else:
+            self.report.append("Nie wykryto całkowicie pustych wierszy.")
+
+        return df
+
     def run(self, input_file, output_file, report_file):
         df = self.load_data(input_file)
 
         df = self.detect_invalid_data_types(df)
         df = self.normalize_decimal_separator(df)
+        df = self.remove_empty_rows(df)
         df = self.remove_sparse_columns(df)
         df = self.remove_duplicates(df)
         df = self.detect_suspicious_values(df)
