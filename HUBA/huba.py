@@ -36,8 +36,37 @@ class HUBA:
 
         return df
 
+    #sprawdzanie ilości pustych komórek
+    def remove_sparse_columns(self, df, threshold=0.5):
+        rows = len(df)
+
+        columns_to_remove = []
+
+        for column in df.columns:
+            missing = df[column].isna().sum()
+            missing_ratio = missing / rows
+
+            if missing_ratio > threshold:
+                columns_to_remove.append(column)
+
+                self.report.append(
+                    f"Usunięto kolumnę '{column}' - "
+                    f"{missing} braków ({missing_ratio:.1%})"
+                )
+
+        df = df.drop(columns=columns_to_remove)
+
+        self.report.append(
+            f"Usunięto {len(columns_to_remove)} kolumn z ponad {threshold:.0%} braków."
+        )
+
+        return df
+
     def run(self, input_file, output_file):
         df = self.load_data(input_file)
+
+        # Usuwanie kolumn z dużą liczbą braków
+        df = self.remove_sparse_columns(df)
 
         # Walidacja
         # Czyszczenie
