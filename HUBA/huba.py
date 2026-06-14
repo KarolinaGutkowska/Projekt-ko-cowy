@@ -89,10 +89,31 @@ class HUBA:
                         f"Kolumna '{column}' zawiera {outliers_count} wartości odstających."
                     )
 
+    #Zamiana przecinków na kropki
+        def normalize_decimal_separator(self, df):
+            changes = 0
+
+            for column in df.columns:
+                if df[column].dtype == "object":
+                    original = df[column].copy()
+
+                    df[column] = df[column].astype(str).str.replace(",", ".", regex=False)
+
+                    changes += (original != df[column]).sum()
+
+            self.report.append(
+                f"Zamieniono przecinki na kropki w {changes} komórkach."
+            )
+
+            return df
+
         return df
 
     def run(self, input_file, output_file):
         df = self.load_data(input_file)
+
+        #Zamiana przecinków na kropki
+        df = self.normalize_decimal_separator(df)
 
         # Usuwanie kolumn z dużą liczbą braków
         df = self.remove_sparse_columns(df)
