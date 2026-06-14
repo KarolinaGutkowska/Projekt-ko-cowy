@@ -95,15 +95,24 @@ class HUBA:
 
             for column in df.columns:
                 if df[column].dtype == "object":
-                    original = df[column].copy()
 
-                    df[column] = df[column].astype(str).str.replace(",", ".", regex=False)
+                    for idx, value in df[column].items():
 
-                    changes += (original != df[column]).sum()
+                        if isinstance(value, str):
+
+                            if value.replace(",", "").replace(".", "").isdigit():
+
+                                new_value = value.replace(",", ".")
+
+                                if new_value != value:
+                                    df.at[idx, column] = new_value
+                                    changes += 1
 
             self.report.append(
-                f"Zamieniono przecinki na kropki w {changes} komórkach."
+                f"Zamieniono przecinki dziesiętne na kropki w {changes} komórkach."
             )
+
+            return df
 
             return df
 
@@ -118,7 +127,7 @@ class HUBA:
         # Usuwanie kolumn z dużą liczbą braków
         df = self.remove_sparse_columns(df)
 
-        #wykrywanie podejrzanych wartości
+        #Wykrywanie podejrzanych wartości
         df = self.detect_suspicious_values(df)
 
         # Walidacja
