@@ -6,7 +6,7 @@ class HUBA:
 
     def __init__(self):
         self.report = []
-
+    #Wczytywanie plików
     def load_data(self, file_path, sheet_name=0):
         path = Path(file_path)
 
@@ -35,7 +35,7 @@ class HUBA:
         self.report.append(f"Liczba kolumn: {df.shape[1]}")
 
         return df
-
+    #Zamiana przecinków na kropki
     def normalize_decimal_separator(self, df):
         changes = 0
 
@@ -55,7 +55,7 @@ class HUBA:
         )
 
         return df
-
+    #Usuwanie kolumn z brakami powyżej 50%
     def remove_sparse_columns(self, df, threshold=0.5):
         rows = len(df)
         columns_to_remove = []
@@ -79,7 +79,7 @@ class HUBA:
         )
 
         return df
-
+    #Usuwanie duplikatów
     def remove_duplicates(self, df):
         duplicates_count = df.duplicated().sum()
 
@@ -90,7 +90,7 @@ class HUBA:
             self.report.append("Nie wykryto zduplikowanych wierszy.")
 
         return df
-
+    #Wyszukiwanie podejrzanych wartości - ujemnych, znacznie odstających
     def detect_suspicious_values(self, df):
         for column in df.columns:
             if pd.api.types.is_numeric_dtype(df[column]):
@@ -119,9 +119,34 @@ class HUBA:
 
         return df
 
+    #Wykrywanie niewłaściwych typów danych
+    def detect_invalid_data_types(self, df):
+        for column in df.columns:
+
+            if df[column].dtype == "object":
+
+                numeric_version = pd.to_numeric(
+                    df[column],
+                    errors="coerce"
+                )
+
+                invalid_count = (
+                        numeric_version.isna().sum()
+                        - df[column].isna().sum()
+                )
+
+                if invalid_count > 0:
+                    self.report.append(
+                        f"Kolumna '{column}' zawiera "
+                        f"{invalid_count} potencjalnie błędnych wartości "
+                        f"uniemożliwiających konwersję na liczby."
+                    )
+
+        return df
+
     def run(self, input_file, output_file=None):
         df = self.load_data(input_file)
-
+        df = self.detect_invalid_data_types(df)
         df = self.normalize_decimal_separator(df)
         df = self.remove_sparse_columns(df)
         df = self.remove_duplicates(df)
