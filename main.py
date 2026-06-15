@@ -20,7 +20,10 @@ def main():
     # ANALIZA STATYSTYCZNA
     stats_engine = StatisticsEngine()
 
-    results = stats_engine.run(clean_df)
+    results = stats_engine.run(
+        clean_df,
+        "statistics_report.txt"
+    )
 
     print("\n=== STATYSTYKI OPISOWE ===")
     print(results["descriptive_statistics"])

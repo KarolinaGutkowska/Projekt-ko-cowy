@@ -211,11 +211,47 @@ class StatisticsEngine:
                 f"(p >= {alpha}). Brak podstaw do odrzucenia hipotezy zerowej."
             )
 
-    def run(self, df):
+
+    #Zapisywanie raportu statystycznego
+    def save_report(self, report_file, results):
+        with open(report_file, "w", encoding="utf-8") as file:
+
+            file.write("=== RAPORT STATYSTYCZNY ===\n\n")
+
+            file.write("STATYSTYKI OPISOWE\n")
+            file.write("-------------------\n")
+
+            if results["descriptive_statistics"] is not None:
+                file.write(
+                    results["descriptive_statistics"].to_string()
+                )
+                file.write("\n\n")
+
+            file.write("KORELACJE PEARSONA\n")
+            file.write("-------------------\n")
+
+            if results["correlations"] is not None:
+                file.write(
+                    results["correlations"].to_string()
+                )
+                file.write("\n\n")
+
+            file.write("RAPORT SYSTEMOWY\n")
+            file.write("-------------------\n")
+
+            for line in self.report:
+                file.write(line + "\n")
+
+    def run(self, df, report_file=None):
         descriptive_stats = self.descriptive_statistics(df)
         correlation_matrix = self.correlations(df)
 
-        return {
+        results = {
             "descriptive_statistics": descriptive_stats,
             "correlations": correlation_matrix
         }
+
+        if report_file:
+            self.save_report(report_file, results)
+
+        return results
