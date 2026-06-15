@@ -8,6 +8,20 @@ class StatisticsEngine:
     def __init__(self):
         self.report = []
 
+    #Automatyczne wykrywanie typu zmiennych
+    def detect_variable_types(self, df):
+        variable_types = {}
+
+        for column in df.columns:
+            if pd.api.types.is_numeric_dtype(df[column]):
+                variable_types[column] = "liczbowa"
+            else:
+                variable_types[column] = "kategoryczna"
+
+        self.report.append("Wykryto typy zmiennych w zbiorze danych.")
+
+        return variable_types
+
     #Statystyki opisowe
     def descriptive_statistics(self, df):
         numeric_df = df.select_dtypes(include="number")
@@ -243,10 +257,12 @@ class StatisticsEngine:
                 file.write(line + "\n")
 
     def run(self, df, report_file=None):
+        variable_types = self.detect_variable_types(df)
         descriptive_stats = self.descriptive_statistics(df)
         correlation_matrix = self.correlations(df)
 
         results = {
+            "variable_types": variable_types,
             "descriptive_statistics": descriptive_stats,
             "correlations": correlation_matrix
         }

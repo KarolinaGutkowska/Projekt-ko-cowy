@@ -25,6 +25,10 @@ def main():
         "statistics_report.txt"
     )
 
+    print("\n=== TYPY ZMIENNYCH ===")
+    for column, var_type in results["variable_types"].items():
+        print(f"{column}: {var_type}")
+
     print("\n=== STATYSTYKI OPISOWE ===")
     print(results["descriptive_statistics"])
 
