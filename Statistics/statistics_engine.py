@@ -136,40 +136,40 @@ class StatisticsEngine:
 
         return result
 
-    #Test Kruskal–Wallis
+    # Test Kruskal–Wallis
     def kruskal_wallis_test(self, df, numeric_column, group_column):
-    groups = df[group_column].dropna().unique()
+        groups = df[group_column].dropna().unique()
 
-    if len(groups) < 3:
+        if len(groups) < 3:
+            self.report.append(
+                f"Test Kruskal–Wallis wymaga co najmniej 3 grup w kolumnie '{group_column}'."
+            )
+            return None
+
+        data_groups = [
+            df[df[group_column] == group][numeric_column].dropna()
+            for group in groups
+        ]
+
+        statistic, p_value = kruskal(*data_groups)
+
+        result = {
+            "test": "Kruskal–Wallis",
+            "kolumna_liczbowa": numeric_column,
+            "kolumna_grupująca": group_column,
+            "liczba_grup": len(groups),
+            "grupy": list(groups),
+            "statystyka_H": statistic,
+            "p_value": p_value,
+            "istotne_statystycznie": p_value < 0.05,
+            "interpretacja": self.interpret_p_value(p_value)
+        }
+
         self.report.append(
-            f"Test Kruskal–Wallis wymaga co najmniej 3 grup w kolumnie '{group_column}'."
+            f"Wykonano test Kruskal–Wallis dla '{numeric_column}' względem '{group_column}'."
         )
-        return None
 
-    data_groups = [
-        df[df[group_column] == group][numeric_column].dropna()
-        for group in groups
-    ]
-
-    statistic, p_value = kruskal(*data_groups)
-
-    result = {
-        "test": "Kruskal–Wallis",
-        "kolumna_liczbowa": numeric_column,
-        "kolumna_grupująca": group_column,
-        "liczba_grup": len(groups),
-        "grupy": list(groups),
-        "statystyka_H": statistic,
-        "p_value": p_value,
-        "istotne_statystycznie": p_value < 0.05,
-        "interpretacja": self.interpret_p_value(p_value)
-    }
-
-    self.report.append(
-        f"Wykonano test Kruskal–Wallis dla '{numeric_column}' względem '{group_column}'."
-    )
-
-    return result
+        return result
 
     #Test chi-kwadrat
     def chi_square_test(self, df, column1, column2):
