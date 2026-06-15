@@ -99,6 +99,40 @@ class StatisticsEngine:
 
         return result
 
+    #ANOVA
+    def anova_test(self, df, numeric_column, group_column):
+        groups = df[group_column].dropna().unique()
+
+        if len(groups) < 3:
+            self.report.append(
+                f"ANOVA wymaga co najmniej 3 grup w kolumnie '{group_column}'."
+            )
+            return None
+
+        data_groups = [
+            df[df[group_column] == group][numeric_column].dropna()
+            for group in groups
+        ]
+
+        statistic, p_value = f_oneway(*data_groups)
+
+        result = {
+            "test": "ANOVA",
+            "kolumna_liczbowa": numeric_column,
+            "kolumna_grupująca": group_column,
+            "liczba_grup": len(groups),
+            "grupy": list(groups),
+            "statystyka_F": statistic,
+            "p_value": p_value,
+            "istotne_statystycznie": p_value < 0.05
+        }
+
+        self.report.append(
+            f"Wykonano test ANOVA dla '{numeric_column}' względem '{group_column}'."
+        )
+
+        return result
+
     def run(self, df):
         descriptive_stats = self.descriptive_statistics(df)
         correlation_matrix = self.correlations(df)

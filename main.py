@@ -37,6 +37,15 @@ def main():
     print("\n=== TEST MANN–WHITNEY ===")
     print(mw_result)
 
+    anova_result = stats_engine.anova_test(
+        clean_df,
+        numeric_column="wynik",
+        group_column="grupa"
+    )
+
+    print("\n=== TEST ANOVA ===")
+    print(anova_result)
+
     print("\n=== RAPORT STATYSTYCZNY ===")
     for line in stats_engine.report:
         print(line)
