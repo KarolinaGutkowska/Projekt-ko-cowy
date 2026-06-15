@@ -46,6 +46,24 @@ def main():
     print("\n=== TEST ANOVA ===")
     print(anova_result)
 
+    kruskal_result = stats_engine.kruskal_wallis_test(
+        clean_df,
+        numeric_column="wynik",
+        group_column="grupa"
+    )
+
+    print("\n=== TEST KRUSKAL–WALLIS ===")
+    print(kruskal_result)
+
+    chi_result = stats_engine.chi_square_test(
+        clean_df,
+        column1="plec",
+        column2="wynik_egzaminu"
+    )
+
+    print("\n=== TEST CHI-KWADRAT ===")
+    print(chi_result)
+
     print("\n=== RAPORT STATYSTYCZNY ===")
     for line in stats_engine.report:
         print(line)

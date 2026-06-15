@@ -133,6 +133,67 @@ class StatisticsEngine:
 
         return result
 
+    #Test Kruskal–Wallis
+    def kruskal_wallis_test(self, df, numeric_column, group_column):
+    groups = df[group_column].dropna().unique()
+
+    if len(groups) < 3:
+        self.report.append(
+            f"Test Kruskal–Wallis wymaga co najmniej 3 grup w kolumnie '{group_column}'."
+        )
+        return None
+
+    data_groups = [
+        df[df[group_column] == group][numeric_column].dropna()
+        for group in groups
+    ]
+
+    statistic, p_value = kruskal(*data_groups)
+
+    result = {
+        "test": "Kruskal–Wallis",
+        "kolumna_liczbowa": numeric_column,
+        "kolumna_grupująca": group_column,
+        "liczba_grup": len(groups),
+        "grupy": list(groups),
+        "statystyka_H": statistic,
+        "p_value": p_value,
+        "istotne_statystycznie": p_value < 0.05
+    }
+
+    self.report.append(
+        f"Wykonano test Kruskal–Wallis dla '{numeric_column}' względem '{group_column}'."
+    )
+
+    return result
+
+    #Test chi-kwadrat
+    def chi_square_test(self, df, column1, column2):
+        contingency_table = pd.crosstab(
+            df[column1],
+            df[column2]
+        )
+
+        statistic, p_value, dof, expected = chi2_contingency(
+            contingency_table
+        )
+
+        result = {
+            "test": "Chi-Square",
+            "kolumna_1": column1,
+            "kolumna_2": column2,
+            "chi2": statistic,
+            "p_value": p_value,
+            "degrees_of_freedom": dof,
+            "istotne_statystycznie": p_value < 0.05
+        }
+
+        self.report.append(
+            f"Wykonano test Chi-kwadrat dla '{column1}' i '{column2}'."
+        )
+
+        return result
+
     def run(self, df):
         descriptive_stats = self.descriptive_statistics(df)
         correlation_matrix = self.correlations(df)
