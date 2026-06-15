@@ -1,5 +1,7 @@
 import pandas as pd
 from pathlib import Path
+import io
+import msoffcrypto
 
 
 class HUBA:
@@ -7,7 +9,7 @@ class HUBA:
     def __init__(self):
         self.report = []
     #Wczytywanie plików
-    def load_data(self, file_path, sheet_name=0):
+    def load_data(self, file_path, sheet_name=0, password=None):
         path = Path(file_path)
 
         if not path.exists():
@@ -22,8 +24,19 @@ class HUBA:
             self.report.append("Wczytano plik CSV.")
 
         elif path.suffix.lower() in [".xlsx", ".xls"]:
-            df = pd.read_excel(path, sheet_name=sheet_name)
-            self.report.append("Wczytano plik Excel.")
+            if password:
+                decrypted = io.BytesIO()
+
+                with open(path, "rb") as file:
+                    office_file = msoffcrypto.OfficeFile(file)
+                    office_file.load_key(password=password)
+                    office_file.decrypt(decrypted)
+
+                df = pd.read_excel(decrypted, sheet_name=sheet_name)
+                self.report.append("Wczytano zabezpieczony hasłem plik Excel.")
+            else:
+                df = pd.read_excel(path, sheet_name=sheet_name)
+                self.report.append("Wczytano plik Excel.")
 
         else:
             raise ValueError("Obsługiwane formaty to tylko: .csv, .xlsx, .xls")
@@ -182,8 +195,8 @@ class HUBA:
 
         return df
 
-    def run(self, input_file, output_file, report_file):
-        df = self.load_data(input_file)
+    def run(self, input_file, output_file, report_file, password=None):
+        df = self.load_data(input_file, password=password)
 
         df = self.detect_invalid_data_types(df)
         df = self.normalize_decimal_separator(df)
