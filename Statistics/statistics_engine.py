@@ -58,7 +58,8 @@ class StatisticsEngine:
             "grupa_2": groups[1],
             "statystyka_t": statistic,
             "p_value": p_value,
-            "istotne_statystycznie": p_value < 0.05
+            "istotne_statystycznie": p_value < 0.05,
+            "interpretacja": self.interpret_p_value(p_value)
         }
 
         self.report.append(
@@ -90,7 +91,8 @@ class StatisticsEngine:
             "grupa_2": groups[1],
             "statystyka_U": statistic,
             "p_value": p_value,
-            "istotne_statystycznie": p_value < 0.05
+            "istotne_statystycznie": p_value < 0.05,
+            "interpretacja": self.interpret_p_value(p_value)
         }
 
         self.report.append(
@@ -124,7 +126,8 @@ class StatisticsEngine:
             "grupy": list(groups),
             "statystyka_F": statistic,
             "p_value": p_value,
-            "istotne_statystycznie": p_value < 0.05
+            "istotne_statystycznie": p_value < 0.05,
+            "interpretacja": self.interpret_p_value(p_value)
         }
 
         self.report.append(
@@ -158,7 +161,8 @@ class StatisticsEngine:
         "grupy": list(groups),
         "statystyka_H": statistic,
         "p_value": p_value,
-        "istotne_statystycznie": p_value < 0.05
+        "istotne_statystycznie": p_value < 0.05,
+        "interpretacja": self.interpret_p_value(p_value)
     }
 
     self.report.append(
@@ -185,7 +189,8 @@ class StatisticsEngine:
             "chi2": statistic,
             "p_value": p_value,
             "degrees_of_freedom": dof,
-            "istotne_statystycznie": p_value < 0.05
+            "istotne_statystycznie": p_value < 0.05,
+            "interpretacja": self.interpret_p_value(p_value)
         }
 
         self.report.append(
@@ -193,6 +198,18 @@ class StatisticsEngine:
         )
 
         return result
+    #automatyczna interpretacja p-value
+    def interpret_p_value(self, p_value, alpha=0.05):
+        if p_value < alpha:
+            return (
+                f"p = {p_value:.4f}. Wynik jest istotny statystycznie "
+                f"(p < {alpha}). Odrzucamy hipotezę zerową."
+            )
+        else:
+            return (
+                f"p = {p_value:.4f}. Wynik nie jest istotny statystycznie "
+                f"(p >= {alpha}). Brak podstaw do odrzucenia hipotezy zerowej."
+            )
 
     def run(self, df):
         descriptive_stats = self.descriptive_statistics(df)
