@@ -28,6 +28,15 @@ def main():
     print("\n=== KORELACJE PEARSONA ===")
     print(results["correlations"])
 
+    mw_result = stats_engine.mann_whitney_test(
+        clean_df,
+        numeric_column="wynik",
+        group_column="grupa"
+    )
+
+    print("\n=== TEST MANN–WHITNEY ===")
+    print(mw_result)
+
     print("\n=== RAPORT STATYSTYCZNY ===")
     for line in stats_engine.report:
         print(line)
