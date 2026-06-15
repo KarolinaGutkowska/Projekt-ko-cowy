@@ -1,0 +1,11 @@
+=== RAPORT STATYSTYCZNY ===
+
+STATYSTYKI OPISOWE
+-------------------
+KORELACJE PEARSONA
+-------------------
+RAPORT SYSTEMOWY
+-------------------
+Wykryto typy zmiennych w zbiorze danych.
+Brak kolumn liczbowych do analizy opisowej.
+Za mało kolumn liczbowych do obliczenia korelacji.

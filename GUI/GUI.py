@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QPushButton, QVBoxLayout,
-    QLabel, QFileDialog, QTextEdit
+    QLabel, QFileDialog, QTextEdit, QLineEdit
 )
 from PyQt6.QtWidgets import QMessageBox
 import traceback
@@ -25,12 +25,17 @@ class MainWindow(QWidget):
         self.choose_button = QPushButton("Wybierz plik CSV lub Excel")
         self.choose_button.clicked.connect(self.choose_file)
 
+        self.password_input = QLineEdit()
+        self.password_input.setPlaceholderText("Hasło do pliku Excel (opcjonalnie)")
+        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+
         self.run_button = QPushButton("Uruchom HUBA i analizę")
         self.run_button.clicked.connect(self.run_analysis)
 
         layout = QVBoxLayout()
         layout.addWidget(self.label)
         layout.addWidget(self.choose_button)
+        layout.addWidget(self.password_input)
         layout.addWidget(self.run_button)
         layout.addWidget(self.output)
 
@@ -54,24 +59,44 @@ class MainWindow(QWidget):
                 self.output.setText("Najpierw wybierz plik.")
                 return
 
+            password = self.password_input.text()
+
+            if password == "":
+                password = None
+
             huba = HUBA()
 
             clean_df = huba.run(
                 self.file_path,
                 "dane_clean.xlsx",
-                "huba_report.txt"
+                "huba_report.txt",
+                password=password
             )
 
             stats_engine = StatisticsEngine()
-            results = stats_engine.run(clean_df, "statistics_report.txt")
+
+            results = stats_engine.run(
+                clean_df,
+                "statistics_report.txt"
+            )
 
             text = "=== RAPORT HUBA ===\n"
+
             for line in huba.report:
                 text += line + "\n"
 
             text += "\n=== TYPY ZMIENNYCH ===\n"
+
             for column, var_type in results["variable_types"].items():
                 text += f"{column}: {var_type}\n"
+
+            text += "\n=== STATYSTYKI OPISOWE ===\n"
+            text += str(results["descriptive_statistics"])
+
+            text += "\n\n=== RAPORT STATYSTYCZNY ===\n"
+
+            for line in stats_engine.report:
+                text += line + "\n"
 
             self.output.setText(text)
 
@@ -79,7 +104,7 @@ class MainWindow(QWidget):
             QMessageBox.critical(
                 self,
                 "Błąd",
-                f"Wystąpił błąd:\n{e}\n\n{traceback.format_exc()}"
+                str(e)
             )
 
 

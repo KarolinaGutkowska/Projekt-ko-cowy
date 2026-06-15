@@ -1,0 +1,239 @@
+=== RAPORT HUBA ===
+
+Wczytano plik Excel.
+Liczba wierszy: 343
+Liczba kolumn: 161
+Kolumna 'Unnamed: 0' zawiera 3 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 1' zawiera 342 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 3' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 4' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 5' zawiera 6 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 6' zawiera 5 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 7' zawiera 7 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 8' zawiera 44 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 9' zawiera 80 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Wskazanie_do_koro' zawiera 8 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 11' zawiera 5 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 12' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 13' zawiera 6 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 14' zawiera 47 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Dane_kliniczne/wywiad_chorobowy' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 16' zawiera 27 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 17' zawiera 26 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 18' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 19' zawiera 3 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 20' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 21' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 22' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 23' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 24' zawiera 19 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 25' zawiera 3 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 26' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 27' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 28' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 29' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 30' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 31' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 32' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 33' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 34' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 35' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 36' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 37' zawiera 3 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 38' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 39' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 40' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 41' zawiera 4 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 42' zawiera 15 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'USG lub CT_jamy_brzusznej ' zawiera 4 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 44' zawiera 8 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 45' zawiera 8 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 46' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'USG_tętnic_szyjnych' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 48' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 49' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 50' zawiera 9 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Leki' zawiera 5 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 52' zawiera 162 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 53' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 54' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 55' zawiera 51 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 56' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 57' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 58' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 59' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 60' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 61' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 62' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 63' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 64' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 65' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Badania_laboratoryjne' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 67' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 68' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 69' zawiera 12 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 70' zawiera 11 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 71' zawiera 10 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 72' zawiera 11 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 73' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 74' zawiera 10 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Koronarografia_zwężenie_>50%' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 76' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 77' zawiera 24 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 78' zawiera 5 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 79' zawiera 43 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 80' zawiera 6 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 81' zawiera 23 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 82' zawiera 16 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 83' zawiera 3 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 84' zawiera 53 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Przezskórna_angioplastyka_wieńcowa ' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 86' zawiera 9 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 87' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 88' zawiera 4 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 89' zawiera 6 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 90' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 91' zawiera 9 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 92' zawiera 39 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 93' zawiera 66 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Koronarografia_tętniaki_tętnic_wieńcowych' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 95' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 96' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 97' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 98' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 99' zawiera 140 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 100' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 101' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 102' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 103' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 105' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 106' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 107' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 108' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 110' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 111' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 112' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 113' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 115' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 116' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 117' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 118' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 120' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 121' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 122' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 123' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 125' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 126' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 127' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 128' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 129' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 130' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 132' zawiera 8 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 133' zawiera 3 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 134' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 135' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 136' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 138' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 139' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 140' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 141' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 142' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 144' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 145' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 146' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 147' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 148' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 150' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 151' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 152' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 153' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Unnamed: 154' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Zamieniono przecinki dziesiętne na kropki w 5 komórkach.
+Nie wykryto całkowicie pustych wierszy.
+Usunięto kolumnę 'Unnamed: 14' - 200 braków (58.3%)
+Usunięto kolumnę 'Unnamed: 16' - 229 braków (66.8%)
+Usunięto kolumnę 'Unnamed: 24' - 221 braków (64.4%)
+Usunięto kolumnę 'Unnamed: 26' - 177 braków (51.6%)
+Usunięto kolumnę 'Unnamed: 42' - 223 braków (65.0%)
+Usunięto kolumnę 'USG lub CT_jamy_brzusznej ' - 215 braków (62.7%)
+Usunięto kolumnę 'Unnamed: 44' - 227 braków (66.2%)
+Usunięto kolumnę 'Unnamed: 45' - 226 braków (65.9%)
+Usunięto kolumnę 'Unnamed: 46' - 233 braków (67.9%)
+Usunięto kolumnę 'USG_tętnic_szyjnych' - 195 braków (56.9%)
+Usunięto kolumnę 'Unnamed: 48' - 228 braków (66.5%)
+Usunięto kolumnę 'Unnamed: 49' - 229 braków (66.8%)
+Usunięto kolumnę 'Unnamed: 50' - 192 braków (56.0%)
+Usunięto kolumnę 'Unnamed: 52' - 180 braków (52.5%)
+Usunięto kolumnę 'Unnamed: 54' - 271 braków (79.0%)
+Usunięto kolumnę 'Unnamed: 55' - 291 braków (84.8%)
+Usunięto kolumnę 'Unnamed: 57' - 209 braków (60.9%)
+Usunięto kolumnę 'Unnamed: 60' - 211 braków (61.5%)
+Usunięto kolumnę 'Unnamed: 61' - 245 braków (71.4%)
+Usunięto kolumnę 'Unnamed: 62' - 233 braków (67.9%)
+Usunięto kolumnę 'Unnamed: 63' - 260 braków (75.8%)
+Usunięto kolumnę 'Unnamed: 64' - 259 braków (75.5%)
+Usunięto kolumnę 'Unnamed: 65' - 246 braków (71.7%)
+Usunięto kolumnę 'Unnamed: 76' - 333 braków (97.1%)
+Usunięto kolumnę 'Unnamed: 83' - 289 braków (84.3%)
+Usunięto kolumnę 'Unnamed: 90' - 215 braków (62.7%)
+Usunięto kolumnę 'Koronarografia_tętniaki_tętnic_wieńcowych' - 326 braków (95.0%)
+Usunięto kolumnę 'Unnamed: 95' - 326 braków (95.0%)
+Usunięto kolumnę 'Unnamed: 96' - 326 braków (95.0%)
+Usunięto kolumnę 'Unnamed: 97' - 325 braków (94.8%)
+Usunięto kolumnę 'Unnamed: 98' - 202 braków (58.9%)
+Usunięto kolumnę 'Unnamed: 99' - 202 braków (58.9%)
+Usunięto kolumnę 'Unnamed: 100' - 202 braków (58.9%)
+Usunięto kolumnę 'Unnamed: 101' - 202 braków (58.9%)
+Usunięto kolumnę 'Unnamed: 102' - 202 braków (58.9%)
+Usunięto kolumnę 'Unnamed: 103' - 330 braków (96.2%)
+Usunięto kolumnę 'Unnamed: 104' - 330 braków (96.2%)
+Usunięto kolumnę 'Unnamed: 105' - 330 braków (96.2%)
+Usunięto kolumnę 'Unnamed: 106' - 330 braków (96.2%)
+Usunięto kolumnę 'Unnamed: 107' - 330 braków (96.2%)
+Usunięto kolumnę 'Unnamed: 108' - 240 braków (70.0%)
+Usunięto kolumnę 'Unnamed: 109' - 240 braków (70.0%)
+Usunięto kolumnę 'Unnamed: 110' - 240 braków (70.0%)
+Usunięto kolumnę 'Unnamed: 111' - 240 braków (70.0%)
+Usunięto kolumnę 'Unnamed: 112' - 240 braków (70.0%)
+Usunięto kolumnę 'Unnamed: 113' - 337 braków (98.3%)
+Usunięto kolumnę 'Unnamed: 114' - 337 braków (98.3%)
+Usunięto kolumnę 'Unnamed: 115' - 337 braków (98.3%)
+Usunięto kolumnę 'Unnamed: 116' - 337 braków (98.3%)
+Usunięto kolumnę 'Unnamed: 117' - 337 braków (98.3%)
+Usunięto kolumnę 'Unnamed: 118' - 340 braków (99.1%)
+Usunięto kolumnę 'Unnamed: 119' - 340 braków (99.1%)
+Usunięto kolumnę 'Unnamed: 120' - 340 braków (99.1%)
+Usunięto kolumnę 'Unnamed: 121' - 340 braków (99.1%)
+Usunięto kolumnę 'Unnamed: 122' - 340 braków (99.1%)
+Usunięto kolumnę 'Unnamed: 123' - 230 braków (67.1%)
+Usunięto kolumnę 'Unnamed: 124' - 230 braków (67.1%)
+Usunięto kolumnę 'Unnamed: 125' - 230 braków (67.1%)
+Usunięto kolumnę 'Unnamed: 126' - 230 braków (67.1%)
+Usunięto kolumnę 'Unnamed: 127' - 230 braków (67.1%)
+Usunięto kolumnę 'Unnamed: 137' - 298 braków (86.9%)
+Usunięto kolumnę 'Unnamed: 138' - 298 braków (86.9%)
+Usunięto kolumnę 'Unnamed: 139' - 298 braków (86.9%)
+Usunięto kolumnę 'Unnamed: 140' - 298 braków (86.9%)
+Usunięto kolumnę 'Unnamed: 141' - 298 braków (86.9%)
+Usunięto kolumnę 'Unnamed: 142' - 298 braków (86.9%)
+Usunięto kolumnę 'Unnamed: 143' - 326 braków (95.0%)
+Usunięto kolumnę 'Unnamed: 144' - 326 braków (95.0%)
+Usunięto kolumnę 'Unnamed: 145' - 326 braków (95.0%)
+Usunięto kolumnę 'Unnamed: 146' - 326 braków (95.0%)
+Usunięto kolumnę 'Unnamed: 147' - 326 braków (95.0%)
+Usunięto kolumnę 'Unnamed: 148' - 326 braków (95.0%)
+Usunięto kolumnę 'Unnamed: 149' - 338 braków (98.5%)
+Usunięto kolumnę 'Unnamed: 150' - 338 braków (98.5%)
+Usunięto kolumnę 'Unnamed: 151' - 338 braków (98.5%)
+Usunięto kolumnę 'Unnamed: 152' - 338 braków (98.5%)
+Usunięto kolumnę 'Unnamed: 153' - 338 braków (98.5%)
+Usunięto kolumnę 'Unnamed: 154' - 338 braków (98.5%)
+Usunięto kolumnę 'Unnamed: 155' - 342 braków (99.7%)
+Usunięto kolumnę 'Unnamed: 156' - 342 braków (99.7%)
+Usunięto kolumnę 'Unnamed: 157' - 342 braków (99.7%)
+Usunięto kolumnę 'Unnamed: 158' - 342 braków (99.7%)
+Usunięto kolumnę 'Unnamed: 159' - 342 braków (99.7%)
+Usunięto kolumnę 'Unnamed: 160' - 342 braków (99.7%)
+Usunięto 84 kolumn z ponad 50% braków.
+Nie wykryto zduplikowanych wierszy.
+Zapisano oczyszczone dane do pliku: dane_clean.xlsx
