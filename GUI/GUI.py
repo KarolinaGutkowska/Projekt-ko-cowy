@@ -1,10 +1,10 @@
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QPushButton, QVBoxLayout,
-    QLabel, QFileDialog, QTextEdit, QLineEdit
+    QLabel, QFileDialog, QTextEdit, QLineEdit,
+    QTableWidget, QTableWidgetItem, QMessageBox
 )
-from PyQt6.QtWidgets import QMessageBox
-import traceback
+
 from HUBA.huba import HUBA
 from Statistics.statistics_engine import StatisticsEngine
 
@@ -14,13 +14,11 @@ class MainWindow(QWidget):
         super().__init__()
 
         self.setWindowTitle("StatAnalyzer - HUBA")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1000, 700)
 
         self.file_path = None
 
         self.label = QLabel("Nie wybrano pliku")
-        self.output = QTextEdit()
-        self.output.setReadOnly(True)
 
         self.choose_button = QPushButton("Wybierz plik CSV lub Excel")
         self.choose_button.clicked.connect(self.choose_file)
@@ -32,11 +30,17 @@ class MainWindow(QWidget):
         self.run_button = QPushButton("Uruchom HUBA i analizę")
         self.run_button.clicked.connect(self.run_analysis)
 
+        self.preview_table = QTableWidget()
+
+        self.output = QTextEdit()
+        self.output.setReadOnly(True)
+
         layout = QVBoxLayout()
         layout.addWidget(self.label)
         layout.addWidget(self.choose_button)
         layout.addWidget(self.password_input)
         layout.addWidget(self.run_button)
+        layout.addWidget(self.preview_table)
         layout.addWidget(self.output)
 
         self.setLayout(layout)
@@ -52,6 +56,25 @@ class MainWindow(QWidget):
         if file_path:
             self.file_path = file_path
             self.label.setText(f"Wybrano plik: {file_path}")
+
+    def show_dataframe_preview(self, df, max_rows=100):
+        preview_df = df.head(max_rows)
+
+        self.preview_table.setRowCount(len(preview_df))
+        self.preview_table.setColumnCount(len(preview_df.columns))
+        self.preview_table.setHorizontalHeaderLabels(
+            preview_df.columns.astype(str)
+        )
+
+        for row_idx, row in enumerate(preview_df.itertuples(index=False)):
+            for col_idx, value in enumerate(row):
+                self.preview_table.setItem(
+                    row_idx,
+                    col_idx,
+                    QTableWidgetItem(str(value))
+                )
+
+        self.preview_table.resizeColumnsToContents()
 
     def run_analysis(self):
         try:
@@ -72,6 +95,8 @@ class MainWindow(QWidget):
                 "huba_report.txt",
                 password=password
             )
+
+            self.show_dataframe_preview(clean_df)
 
             stats_engine = StatisticsEngine()
 
@@ -106,9 +131,3 @@ class MainWindow(QWidget):
                 "Błąd",
                 str(e)
             )
-
-
-app = QApplication(sys.argv)
-window = MainWindow()
-window.show()
-sys.exit(app.exec())
