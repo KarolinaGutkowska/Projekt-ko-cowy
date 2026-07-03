@@ -1,15 +1,15 @@
 import sys
-from PyQt6.QtWidgets import (
-    QApplication, QWidget, QPushButton, QVBoxLayout,
-    QLabel, QFileDialog, QTextEdit, QLineEdit,
-    QTableWidget, QTableWidgetItem, QMessageBox
-)
 
 from HUBA.huba import HUBA
 from Statistics.statistics_engine import StatisticsEngine
 
 
-class MainWindow(QWidget):
+class MainWindow(QWidget):from PyQt6.QtWidgets import (
+    QApplication, QWidget, QPushButton, QVBoxLayout,
+    QLabel, QFileDialog, QTextEdit, QLineEdit,
+    QTableWidget, QTableWidgetItem, QMessageBox, QComboBox
+)
+
     def __init__(self):
         super().__init__()
 
@@ -35,10 +35,20 @@ class MainWindow(QWidget):
         self.output = QTextEdit()
         self.output.setReadOnly(True)
 
+        self.analysis_choice = QComboBox()
+        self.analysis_choice.addItems([
+            "Statystyki opisowe",
+            "Korelacje Pearsona",
+            "Porównanie 2 grup",
+            "Porównanie więcej niż 2 grup",
+            "Dwie zmienne kategoryczne"
+        ])
+
         layout = QVBoxLayout()
         layout.addWidget(self.label)
         layout.addWidget(self.choose_button)
         layout.addWidget(self.password_input)
+        layout.addWidget(self.analysis_choice)
         layout.addWidget(self.run_button)
         layout.addWidget(self.preview_table)
         layout.addWidget(self.output)
