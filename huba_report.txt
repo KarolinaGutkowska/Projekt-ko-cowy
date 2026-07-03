@@ -1,0 +1,76 @@
+=== RAPORT HUBA ===
+
+Wczytano plik Excel.
+Liczba wierszy: 342
+Liczba kolumn: 77
+Kolumna 'Lp.' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Data_koro' zawiera 341 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Płeć [0 - M]' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Masa_ciała[kg]' zawiera 5 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Wzrost[cm]' zawiera 4 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'BMI[kg/m2]' zawiera 5 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'angio-CT w systemie' zawiera 43 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'scyntygrafia' zawiera 79 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'NSTEMI' zawiera 7 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'STEMI' zawiera 4 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'UA' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'PZW' zawiera 5 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'EF[%]' zawiera 25 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'DM' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Otyłość (BMI>30)' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Udar' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Żylna_choroba_zakrzepowo-zatorowa' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Układowe_choroby_tkanki_łącznej' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Ch. Nowotworowa' zawiera 3 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'P2Y12' zawiera 4 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Cholesterol_całkowity' zawiera 11 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'HDL_C' zawiera 9 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'LDL_C' zawiera 9 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'TG' zawiera 10 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'GFR' zawiera 9 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Anomalie_tętnic_wieńcowych' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Kolejna_koronarografia' zawiera 23 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'LM' zawiera 4 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'LAD' zawiera 42 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Dg' zawiera 5 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'LCx' zawiera 22 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Mg' zawiera 15 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'RCA' zawiera 52 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'LM.1' zawiera 1 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'LAD.1' zawiera 8 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'LCx.1' zawiera 3 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Mg.1' zawiera 5 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'RCA.1' zawiera 8 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Metoda' zawiera 38 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'Czy leczenie obejmowało tętniaka?' zawiera 65 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'RD_prox' zawiera 7 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Kolumna 'RD_dist' zawiera 2 potencjalnie błędnych wartości uniemożliwiających konwersję na liczby.
+Zamieniono przecinki dziesiętne na kropki w 0 komórkach.
+Nie wykryto całkowicie pustych wierszy.
+Usunięto 0 kolumn z ponad 50% braków.
+Nie wykryto zduplikowanych wierszy.
+Kolumna 'Wiek' zawiera 3 wartości odstających.
+Kolumna 'HF' zawiera 68 wartości odstających.
+Kolumna 'HA' zawiera 22 wartości odstających.
+Kolumna 'IDDM' zawiera 13 wartości odstających.
+Kolumna 'Hiperlipidemia ' zawiera 42 wartości odstających.
+Kolumna 'Po_CABG' zawiera 38 wartości odstających.
+Kolumna 'POCHP' zawiera 24 wartości odstających.
+Kolumna 'PAD' zawiera 39 wartości odstających.
+Kolumna 'AF' zawiera 54 wartości odstających.
+Kolumna 'PChN (GFR<60)' zawiera 32 wartości odstających.
+Kolumna 'Żylaki' zawiera 59 wartości odstających.
+Kolumna 'ASA' zawiera 15 wartości odstających.
+Kolumna 'B-bloker' zawiera 18 wartości odstających.
+Kolumna 'Statyna' zawiera 13 wartości odstających.
+Kolumna 'ACEI/ARB' zawiera 12 wartości odstających.
+Kolumna 'HGB' zawiera 8 wartości odstających.
+Kolumna 'PLT' zawiera 10 wartości odstających.
+Kolumna 'WBC' zawiera 19 wartości odstających.
+Kolumna 'Kreatynina' zawiera 14 wartości odstających.
+Kolumna 'Dg.1' zawiera 17 wartości odstających.
+Kolumna 'N_tętnic_z_tętniakami' zawiera 29 wartości odstających.
+Kolumna 'N_tętniaków' zawiera 42 wartości odstających.
+Kolumna 'Max_wymiar_poprzeczny_tętniaka' zawiera 8 wartości odstających.
+Kolumna 'Max_wymiar_podłużny_tętniaka' zawiera 30 wartości odstających.
+Zapisano oczyszczone dane do pliku: dane_clean.xlsx
