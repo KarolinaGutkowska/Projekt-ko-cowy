@@ -20,7 +20,6 @@ class MainWindow(QWidget):
         self.results = None
 
         self.tabs = QTabWidget()
-
         self.data_tab = QWidget()
         self.test_tab = QWidget()
 
@@ -44,7 +43,7 @@ class MainWindow(QWidget):
         self.password_input.setPlaceholderText("Hasło do pliku Excel (opcjonalnie)")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
 
-        self.run_button = QPushButton("Uruchom HUBA i analizę")
+        self.run_button = QPushButton("Odśwież analizę")
         self.run_button.clicked.connect(self.run_analysis)
 
         self.preview_table = QTableWidget()
@@ -74,37 +73,19 @@ class MainWindow(QWidget):
         ])
 
         self.dependency_combo = QComboBox()
-        self.dependency_combo.addItems([
-            "Niezależne",
-            "Zależne"
-        ])
+        self.dependency_combo.addItems(["Niezależne", "Zależne"])
 
         self.groups_combo = QComboBox()
-        self.groups_combo.addItems([
-            "2 grupy",
-            "Więcej niż 2 grupy"
-        ])
+        self.groups_combo.addItems(["2 grupy", "Więcej niż 2 grupy"])
 
         self.variable_type_combo = QComboBox()
-        self.variable_type_combo.addItems([
-            "Nominalna",
-            "Porządkowa",
-            "Ilościowa"
-        ])
+        self.variable_type_combo.addItems(["Nominalna", "Porządkowa", "Ilościowa"])
 
         self.normality_combo = QComboBox()
-        self.normality_combo.addItems([
-            "Tak",
-            "Nie",
-            "Nie wiem"
-        ])
+        self.normality_combo.addItems(["Tak", "Nie", "Nie wiem"])
 
         self.variance_combo = QComboBox()
-        self.variance_combo.addItems([
-            "Tak",
-            "Nie",
-            "Nie wiem"
-        ])
+        self.variance_combo.addItems(["Tak", "Nie", "Nie wiem"])
 
         self.recommend_button = QPushButton("Dobierz test")
         self.recommend_button.clicked.connect(self.recommend_test)
@@ -140,15 +121,14 @@ class MainWindow(QWidget):
         if file_path:
             self.file_path = file_path
             self.label.setText(f"Wybrano plik: {file_path}")
+            self.run_analysis()
 
     def show_dataframe_preview(self, df, max_rows=100):
         preview_df = df.head(max_rows)
 
         self.preview_table.setRowCount(len(preview_df))
         self.preview_table.setColumnCount(len(preview_df.columns))
-        self.preview_table.setHorizontalHeaderLabels(
-            preview_df.columns.astype(str)
-        )
+        self.preview_table.setHorizontalHeaderLabels(preview_df.columns.astype(str))
 
         for row_idx, row in enumerate(preview_df.itertuples(index=False)):
             for col_idx, value in enumerate(row):
@@ -192,7 +172,6 @@ class MainWindow(QWidget):
             self.update_variable_lists()
 
             stats_engine = StatisticsEngine()
-
             self.results = stats_engine.run(
                 self.clean_df,
                 "statistics_report.txt"
@@ -216,11 +195,7 @@ class MainWindow(QWidget):
             self.output.setText(text)
 
         except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Błąd",
-                str(e)
-            )
+            QMessageBox.critical(self, "Błąd", str(e))
 
     def recommend_test(self):
         variable_1 = self.variable_1_combo.currentText()
@@ -244,39 +219,29 @@ class MainWindow(QWidget):
 
         if goal == "Opisać jedną zmienną":
             test = "Statystyki opisowe"
-
         elif goal == "Zbadać związek między zmiennymi":
             if variable_type == "Ilościowa" and normality == "Tak":
                 test = "Korelacja Pearsona"
-            elif variable_type == "Ilościowa" and normality == "Nie":
-                test = "Korelacja Spearmana"
             elif variable_type == "Nominalna":
                 test = "Test Chi-kwadrat niezależności"
             else:
                 test = "Korelacja Spearmana"
-
         elif goal == "Porównać grupy między sobą":
             if dependency == "Niezależne":
                 if groups == "2 grupy":
                     if variable_type == "Ilościowa" and normality == "Tak":
                         test = "Test t-Studenta dla prób niezależnych"
-                    elif variable_type == "Ilościowa" and normality == "Nie":
-                        test = "Test U Manna-Whitneya"
-                    elif variable_type == "Porządkowa":
+                    elif variable_type in ["Ilościowa", "Porządkowa"]:
                         test = "Test U Manna-Whitneya"
                     else:
                         test = "Test Chi-kwadrat niezależności"
-
                 else:
                     if variable_type == "Ilościowa" and normality == "Tak" and variance == "Tak":
                         test = "Jednoczynnikowa ANOVA"
-                    elif variable_type == "Ilościowa":
-                        test = "Test Kruskala-Wallisa"
-                    elif variable_type == "Porządkowa":
+                    elif variable_type in ["Ilościowa", "Porządkowa"]:
                         test = "Test Kruskala-Wallisa"
                     else:
                         test = "Test Chi-kwadrat niezależności"
-
             else:
                 if groups == "2 grupy":
                     if variable_type == "Ilościowa" and normality == "Tak":
@@ -292,5 +257,4 @@ class MainWindow(QWidget):
             test = "Nie udało się dobrać testu."
 
         text += f"Rekomendowany test: {test}\n"
-
         self.test_result.setText(text)
