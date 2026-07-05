@@ -198,9 +198,15 @@ class HUBA:
         return df
     #Zapisywanie raportu w pdf
     def save_report_pdf(self, report_file):
-        pdf = canvas.Canvas(report_file, pagesize=A4)
-        width, height = A4
+        from pathlib import Path
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
 
+        path = Path(report_file)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        pdf = canvas.Canvas(str(path), pagesize=A4)
+        width, height = A4
         y = height - 50
 
         pdf.setFont("Helvetica-Bold", 16)
@@ -220,7 +226,7 @@ class HUBA:
 
         pdf.save()
 
-        self.report.append(f"Zapisano raport PDF do pliku: {report_file}")
+        self.report.append(f"Zapisano raport PDF do pliku: {path}")
 
     def run(self, input_file, output_file, report_file, password=None):
         df = self.load_data(input_file, password=password)
@@ -233,6 +239,6 @@ class HUBA:
         df = self.detect_suspicious_values(df)
 
         self.save_clean_data(df, output_file)
-        self.save_report_pdf("huba_report.pdf")
+        self.save_report_pdf(report_file)
 
         return df
