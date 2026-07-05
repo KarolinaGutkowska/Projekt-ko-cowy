@@ -1,7 +1,8 @@
 from PyQt6.QtWidgets import (
     QWidget, QPushButton, QVBoxLayout, QLabel, QFileDialog,
     QTextEdit, QLineEdit, QTableWidget, QTableWidgetItem,
-    QMessageBox, QComboBox, QTabWidget, QFormLayout
+    QMessageBox, QComboBox, QTabWidget, QFormLayout,
+    QHBoxLayout
 )
 
 from HUBA.huba import HUBA
@@ -13,21 +14,28 @@ class MainWindow(QWidget):
         super().__init__()
 
         self.setWindowTitle("StatAnalyzer")
-        self.setGeometry(100, 100, 1100, 750)
+        self.setGeometry(100, 100, 1200, 800)
 
         self.file_path = None
         self.clean_df = None
         self.results = None
+        self.huba_pdf_path = "huba_report.pdf"
+        self.clean_file_path = "dane_clean.xlsx"
+        self.statistics_report_path = "statistics_report.txt"
 
         self.tabs = QTabWidget()
+
         self.data_tab = QWidget()
         self.test_tab = QWidget()
+        self.results_tab = QWidget()
 
         self.tabs.addTab(self.data_tab, "Dane i HUBA")
         self.tabs.addTab(self.test_tab, "Dobór testu")
+        self.tabs.addTab(self.results_tab, "Wyniki")
 
         self.build_data_tab()
         self.build_test_tab()
+        self.build_results_tab()
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.tabs)
@@ -43,21 +51,26 @@ class MainWindow(QWidget):
         self.password_input.setPlaceholderText("Hasło do pliku Excel (opcjonalnie)")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
 
-        self.run_button = QPushButton("Odśwież analizę")
-        self.run_button.clicked.connect(self.run_analysis)
+        self.refresh_button = QPushButton("Odśwież analizę")
+        self.refresh_button.clicked.connect(self.run_analysis)
 
         self.preview_table = QTableWidget()
 
-        self.output = QTextEdit()
-        self.output.setReadOnly(True)
+        self.status_output = QTextEdit()
+        self.status_output.setReadOnly(True)
+
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(self.choose_button)
+        top_layout.addWidget(self.password_input)
+        top_layout.addWidget(self.refresh_button)
 
         layout = QVBoxLayout()
         layout.addWidget(self.label)
-        layout.addWidget(self.choose_button)
-        layout.addWidget(self.password_input)
-        layout.addWidget(self.run_button)
+        layout.addLayout(top_layout)
+        layout.addWidget(QLabel("Podgląd oczyszczonych danych:"))
         layout.addWidget(self.preview_table)
-        layout.addWidget(self.output)
+        layout.addWidget(QLabel("Status:"))
+        layout.addWidget(self.status_output)
 
         self.data_tab.setLayout(layout)
 
@@ -110,6 +123,16 @@ class MainWindow(QWidget):
 
         self.test_tab.setLayout(layout)
 
+    def build_results_tab(self):
+        self.results_output = QTextEdit()
+        self.results_output.setReadOnly(True)
+
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Wyniki analizy statystycznej:"))
+        layout.addWidget(self.results_output)
+
+        self.results_tab.setLayout(layout)
+
     def choose_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -152,7 +175,7 @@ class MainWindow(QWidget):
     def run_analysis(self):
         try:
             if not self.file_path:
-                self.output.setText("Najpierw wybierz plik.")
+                self.status_output.setText("Najpierw wybierz plik.")
                 return
 
             password = self.password_input.text()
@@ -163,8 +186,8 @@ class MainWindow(QWidget):
 
             self.clean_df = huba.run(
                 self.file_path,
-                "dane_clean.xlsx",
-                "huba_report.txt",
+                self.clean_file_path,
+                self.huba_pdf_path,
                 password=password
             )
 
@@ -174,25 +197,32 @@ class MainWindow(QWidget):
             stats_engine = StatisticsEngine()
             self.results = stats_engine.run(
                 self.clean_df,
-                "statistics_report.txt"
+                self.statistics_report_path
             )
 
-            text = "=== RAPORT HUBA ===\n"
-            for line in huba.report:
-                text += line + "\n"
+            status_text = "=== HUBA ===\n\n"
+            status_text += "HUBA zakończyła czyszczenie danych.\n"
+            status_text += f"Oczyszczony plik zapisano jako: {self.clean_file_path}\n"
+            status_text += f"Raport HUBA zapisano jako PDF: {self.huba_pdf_path}\n"
+            status_text += f"Raport statystyczny zapisano jako: {self.statistics_report_path}\n"
 
-            text += "\n=== TYPY ZMIENNYCH ===\n"
+            self.status_output.setText(status_text)
+
+            results_text = "=== TYPY ZMIENNYCH ===\n\n"
             for column, var_type in self.results["variable_types"].items():
-                text += f"{column}: {var_type}\n"
+                results_text += f"{column}: {var_type}\n"
 
-            text += "\n=== STATYSTYKI OPISOWE ===\n"
-            text += str(self.results["descriptive_statistics"])
+            results_text += "\n=== STATYSTYKI OPISOWE ===\n\n"
+            results_text += str(self.results["descriptive_statistics"])
 
-            text += "\n\n=== RAPORT STATYSTYCZNY ===\n"
+            results_text += "\n\n=== KORELACJE PEARSONA ===\n\n"
+            results_text += str(self.results["correlations"])
+
+            results_text += "\n\n=== RAPORT STATYSTYCZNY ===\n\n"
             for line in stats_engine.report:
-                text += line + "\n"
+                results_text += line + "\n"
 
-            self.output.setText(text)
+            self.results_output.setText(results_text)
 
         except Exception as e:
             QMessageBox.critical(self, "Błąd", str(e))
@@ -219,6 +249,7 @@ class MainWindow(QWidget):
 
         if goal == "Opisać jedną zmienną":
             test = "Statystyki opisowe"
+
         elif goal == "Zbadać związek między zmiennymi":
             if variable_type == "Ilościowa" and normality == "Tak":
                 test = "Korelacja Pearsona"
@@ -226,6 +257,7 @@ class MainWindow(QWidget):
                 test = "Test Chi-kwadrat niezależności"
             else:
                 test = "Korelacja Spearmana"
+
         elif goal == "Porównać grupy między sobą":
             if dependency == "Niezależne":
                 if groups == "2 grupy":

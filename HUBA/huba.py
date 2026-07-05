@@ -2,6 +2,8 @@ import pandas as pd
 from pathlib import Path
 import io
 import msoffcrypto
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
 
 class HUBA:
@@ -194,6 +196,31 @@ class HUBA:
             self.report.append("Nie wykryto całkowicie pustych wierszy.")
 
         return df
+    #Zapisywanie raportu w pdf
+    def save_report_pdf(self, report_file):
+        pdf = canvas.Canvas(report_file, pagesize=A4)
+        width, height = A4
+
+        y = height - 50
+
+        pdf.setFont("Helvetica-Bold", 16)
+        pdf.drawString(50, y, "RAPORT HUBA")
+        y -= 40
+
+        pdf.setFont("Helvetica", 10)
+
+        for line in self.report:
+            if y < 50:
+                pdf.showPage()
+                pdf.setFont("Helvetica", 10)
+                y = height - 50
+
+            pdf.drawString(50, y, str(line))
+            y -= 18
+
+        pdf.save()
+
+        self.report.append(f"Zapisano raport PDF do pliku: {report_file}")
 
     def run(self, input_file, output_file, report_file, password=None):
         df = self.load_data(input_file, password=password)
@@ -206,6 +233,6 @@ class HUBA:
         df = self.detect_suspicious_values(df)
 
         self.save_clean_data(df, output_file)
-        self.save_report(report_file)
+        self.save_report_pdf("huba_report.pdf")
 
         return df
