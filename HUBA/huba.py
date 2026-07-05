@@ -4,6 +4,10 @@ import io
 import msoffcrypto
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+from datetime import datetime
 
 
 class HUBA:
@@ -198,36 +202,88 @@ class HUBA:
         return df
     #Zapisywanie raportu w pdf
     def save_report_pdf(self, report_file):
-        from pathlib import Path
-        from reportlab.lib.pagesizes import A4
-        from reportlab.pdfgen import canvas
-
         path = Path(report_file)
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        pdf = canvas.Canvas(str(path), pagesize=A4)
-        width, height = A4
-        y = height - 50
+        doc = SimpleDocTemplate(str(path), pagesize=A4)
+        styles = getSampleStyleSheet()
 
-        pdf.setFont("Helvetica-Bold", 16)
-        pdf.drawString(50, y, "RAPORT HUBA")
-        y -= 40
+        elements = []
 
-        pdf.setFont("Helvetica", 10)
+        # Tytuł
+        title = Paragraph("<b><font size=18>StatAnalyzer</font></b>", styles["Title"])
+        elements.append(title)
 
-        for line in self.report:
-            if y < 50:
-                pdf.showPage()
-                pdf.setFont("Helvetica", 10)
-                y = height - 50
+        subtitle = Paragraph(
+            "<b>Raport czyszczenia danych (HUBA)</b>",
+            styles["Heading2"]
+        )
+        elements.append(subtitle)
 
-            pdf.drawString(50, y, str(line))
-            y -= 18
+        elements.append(Spacer(1, 20))
 
-        pdf.save()
+        # Data
+        now = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
 
-        self.report.append(f"Zapisano raport PDF do pliku: {path}")
+        elements.append(
+            Paragraph(f"<b>Data wygenerowania:</b> {now}", styles["Normal"])
+        )
 
+        elements.append(Spacer(1, 20))
+
+        # Wykonane operacje
+        elements.append(
+            Paragraph("<b>Wykonane operacje:</b>", styles["Heading2"])
+        )
+
+        data = [["Lp.", "Operacja"]]
+
+        for i, line in enumerate(self.report, start=1):
+            data.append([str(i), line])
+
+        table = Table(data, colWidths=[40, 430])
+
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.darkblue),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+
+            ("BACKGROUND", (0, 1), (-1, -1), colors.whitesmoke),
+
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE")
+        ]))
+
+        elements.append(table)
+
+        elements.append(Spacer(1, 25))
+
+        elements.append(
+            Paragraph("<b>Podsumowanie</b>", styles["Heading2"])
+        )
+
+        elements.append(
+            Paragraph(
+                f"Wykonano <b>{len(self.report)}</b> operacji czyszczenia danych.",
+                styles["Normal"]
+            )
+        )
+
+        elements.append(Spacer(1, 20))
+
+        elements.append(
+            Paragraph(
+                "<font color='grey'>Raport wygenerowany automatycznie przez StatAnalyzer.</font>",
+                styles["Normal"]
+            )
+        )
+
+        doc.build(elements)
     def run(self, input_file, output_file, report_file, password=None):
         df = self.load_data(input_file, password=password)
 
