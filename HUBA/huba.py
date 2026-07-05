@@ -14,6 +14,12 @@ class HUBA:
 
     def __init__(self):
         self.report = []
+        self.input_file = None
+        self.output_file = None
+        self.rows_before = 0
+        self.columns_before = 0
+        self.rows_after = 0
+        self.columns_after = 0
     #Wczytywanie plików
     def load_data(self, file_path, sheet_name=0, password=None):
         path = Path(file_path)
@@ -28,6 +34,9 @@ class HUBA:
                 df = pd.read_csv(path, sep=None, engine="python", encoding="latin1")
 
             self.report.append("Wczytano plik CSV.")
+            self.input_file = str(file_path)
+            self.rows_before = df.shape[0]
+            self.columns_before = df.shape[1]
 
         elif path.suffix.lower() in [".xlsx", ".xls"]:
             if password:
@@ -231,6 +240,29 @@ class HUBA:
 
         elements.append(Spacer(1, 20))
 
+        elements.append(
+            Paragraph("<b>Informacje o pliku:</b>", styles["Heading2"])
+        )
+
+        file_info = [
+            ["Plik wejściowy", self.input_file],
+            ["Plik oczyszczony", self.output_file],
+            ["Wiersze przed czyszczeniem", str(self.rows_before)],
+            ["Kolumny przed czyszczeniem", str(self.columns_before)],
+            ["Wiersze po czyszczeniu", str(self.rows_after)],
+            ["Kolumny po czyszczeniu", str(self.columns_after)],
+        ]
+
+        file_table = Table(file_info, colWidths=[180, 290])
+        file_table.setStyle(TableStyle([
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("BACKGROUND", (0, 0), (0, -1), colors.lightgrey),
+            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ]))
+
+        elements.append(file_table)
+        elements.append(Spacer(1, 20))
+
         # Wykonane operacje
         elements.append(
             Paragraph("<b>Wykonane operacje:</b>", styles["Heading2"])
@@ -293,7 +325,9 @@ class HUBA:
         df = self.remove_sparse_columns(df)
         df = self.remove_duplicates(df)
         df = self.detect_suspicious_values(df)
-
+        self.output_file = output_file
+        self.rows_after = df.shape[0]
+        self.columns_after = df.shape[1]
         self.save_clean_data(df, output_file)
         self.save_report_pdf(report_file)
 
