@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (
     QWidget, QPushButton, QVBoxLayout, QLabel, QFileDialog,
     QTextEdit, QLineEdit, QTableWidget, QTableWidgetItem,
     QMessageBox, QComboBox, QTabWidget, QFormLayout,
-    QHBoxLayout
+    QHBoxLayout, QButtonGroup, QRadioButton, QHBoxLayout
 )
 
 from HUBA.huba import HUBA
@@ -29,13 +29,17 @@ class MainWindow(QWidget):
         self.test_tab = QWidget()
         self.results_tab = QWidget()
 
+        self.normality_tab = QWidget()
+
         self.tabs.addTab(self.data_tab, "Dane i HUBA")
         self.tabs.addTab(self.test_tab, "Dobór testu")
         self.tabs.addTab(self.results_tab, "Wyniki")
+        self.tabs.addTab(self.normality_tab, "Rozkład normalny")
 
         self.build_data_tab()
         self.build_test_tab()
         self.build_results_tab()
+        self.build_normality_tab()
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.tabs)
@@ -75,53 +79,28 @@ class MainWindow(QWidget):
         self.data_tab.setLayout(layout)
 
     def build_test_tab(self):
-        self.variable_1_combo = QComboBox()
-        self.variable_2_combo = QComboBox()
+        self.answers = {}
 
-        self.goal_combo = QComboBox()
-        self.goal_combo.addItems([
-            "Porównać grupy między sobą",
-            "Zbadać związek między zmiennymi",
-            "Opisać jedną zmienną"
-        ])
+        self.question_label = QLabel("")
+        self.question_label.setStyleSheet("font-size: 16px; font-weight: bold;")
 
-        self.dependency_combo = QComboBox()
-        self.dependency_combo.addItems(["Niezależne", "Zależne"])
-
-        self.groups_combo = QComboBox()
-        self.groups_combo.addItems(["2 grupy", "Więcej niż 2 grupy"])
-
-        self.variable_type_combo = QComboBox()
-        self.variable_type_combo.addItems(["Nominalna", "Porządkowa", "Ilościowa"])
-
-        self.normality_combo = QComboBox()
-        self.normality_combo.addItems(["Tak", "Nie", "Nie wiem"])
-
-        self.variance_combo = QComboBox()
-        self.variance_combo.addItems(["Tak", "Nie", "Nie wiem"])
-
-        self.recommend_button = QPushButton("Dobierz test")
-        self.recommend_button.clicked.connect(self.recommend_test)
+        self.answer_layout = QVBoxLayout()
 
         self.test_result = QTextEdit()
         self.test_result.setReadOnly(True)
 
-        form = QFormLayout()
-        form.addRow("Wybierz zmienną:", self.variable_1_combo)
-        form.addRow("Wybierz drugą zmienną:", self.variable_2_combo)
-        form.addRow("Co chcesz zbadać?", self.goal_combo)
-        form.addRow("Jaki charakter mają zmienne?", self.dependency_combo)
-        form.addRow("Ile grup porównujesz?", self.groups_combo)
-        form.addRow("Jaki typ ma zmienna zależna?", self.variable_type_combo)
-        form.addRow("Czy zmienna ma rozkład normalny?", self.normality_combo)
-        form.addRow("Czy wariancje są jednorodne?", self.variance_combo)
+        self.restart_survey_button = QPushButton("Rozpocznij ankietę od nowa")
+        self.restart_survey_button.clicked.connect(self.start_test_survey)
 
         layout = QVBoxLayout()
-        layout.addLayout(form)
-        layout.addWidget(self.recommend_button)
+        layout.addWidget(self.question_label)
+        layout.addLayout(self.answer_layout)
+        layout.addWidget(self.restart_survey_button)
         layout.addWidget(self.test_result)
 
         self.test_tab.setLayout(layout)
+
+        self.start_test_survey()
 
     def build_results_tab(self):
         self.results_output = QTextEdit()
@@ -132,6 +111,242 @@ class MainWindow(QWidget):
         layout.addWidget(self.results_output)
 
         self.results_tab.setLayout(layout)
+
+    def clear_answers(self):
+        while self.answer_layout.count():
+            item = self.answer_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+    def show_question(self, question, options, callback):
+        self.clear_answers()
+        self.question_label.setText(question)
+
+        for option in options:
+            button = QPushButton(option)
+            button.clicked.connect(lambda checked, value=option: callback(value))
+            self.answer_layout.addWidget(button)
+
+    def start_test_survey(self):
+        self.answers = {}
+        self.test_result.clear()
+
+        self.show_question(
+            "Co chcesz zbadać?",
+            [
+                "Opisać jedną zmienną",
+                "Zbadać związek między zmiennymi",
+                "Porównać grupy między sobą"
+            ],
+            self.answer_goal
+        )
+
+    def answer_goal(self, value):
+        self.answers["goal"] = value
+
+        if value == "Opisać jedną zmienną":
+            self.ask_variable_1()
+        elif value == "Zbadać związek między zmiennymi":
+            self.ask_variable_1()
+        elif value == "Porównać grupy między sobą":
+            self.ask_variable_1()
+
+    def ask_variable_1(self):
+        if self.clean_df is None:
+            self.test_result.setText("Najpierw wczytaj plik w zakładce 'Dane i HUBA'.")
+            return
+
+        columns = list(self.clean_df.columns)
+
+        self.show_question(
+            "Wybierz zmienną główną:",
+            columns,
+            self.answer_variable_1
+        )
+
+    def answer_variable_1(self, value):
+        self.answers["variable_1"] = value
+
+        goal = self.answers["goal"]
+
+        if goal == "Opisać jedną zmienną":
+            self.ask_variable_type()
+        elif goal == "Zbadać związek między zmiennymi":
+            self.ask_variable_2()
+        elif goal == "Porównać grupy między sobą":
+            self.ask_variable_2()
+
+    def ask_variable_2(self):
+        columns = list(self.clean_df.columns)
+
+        self.show_question(
+            "Wybierz drugą zmienną:",
+            columns,
+            self.answer_variable_2
+        )
+
+    def answer_variable_2(self, value):
+        self.answers["variable_2"] = value
+
+        goal = self.answers["goal"]
+
+        if goal == "Zbadać związek między zmiennymi":
+            self.ask_variable_type()
+        elif goal == "Porównać grupy między sobą":
+            self.ask_dependency()
+
+    def ask_dependency(self):
+        self.show_question(
+            "Czy grupy są zależne czy niezależne?",
+            ["Niezależne", "Zależne"],
+            self.answer_dependency
+        )
+
+    def answer_dependency(self, value):
+        self.answers["dependency"] = value
+        self.ask_groups_count()
+
+    def ask_groups_count(self):
+        self.show_question(
+            "Ile grup porównujesz?",
+            ["2 grupy", "Więcej niż 2 grupy"],
+            self.answer_groups_count
+        )
+
+    def answer_groups_count(self, value):
+        self.answers["groups"] = value
+        self.ask_variable_type()
+
+    def ask_variable_type(self):
+        self.show_question(
+            "Jaki typ ma zmienna zależna?",
+            ["Nominalna", "Porządkowa", "Ilościowa"],
+            self.answer_variable_type
+        )
+
+    def answer_variable_type(self, value):
+        self.answers["variable_type"] = value
+
+        goal = self.answers["goal"]
+
+        if goal == "Opisać jedną zmienną":
+            self.finish_test_survey()
+        elif goal == "Zbadać związek między zmiennymi":
+            if value == "Ilościowa":
+                self.ask_normality()
+            else:
+                self.finish_test_survey()
+        elif goal == "Porównać grupy między sobą":
+            if value == "Ilościowa":
+                self.ask_normality()
+            else:
+                self.finish_test_survey()
+
+    def ask_normality(self):
+        self.show_question(
+            "Czy zmienna ma rozkład normalny?",
+            ["Tak", "Nie", "Nie wiem"],
+            self.answer_normality
+        )
+
+    def answer_normality(self, value):
+        self.answers["normality"] = value
+
+        goal = self.answers["goal"]
+        groups = self.answers.get("groups")
+
+        if goal == "Porównać grupy między sobą" and groups == "Więcej niż 2 grupy":
+            self.ask_variance()
+        else:
+            self.finish_test_survey()
+
+    def ask_variance(self):
+        self.show_question(
+            "Czy wariancje są jednorodne?",
+            ["Tak", "Nie", "Nie wiem"],
+            self.answer_variance
+        )
+
+    def answer_variance(self, value):
+        self.answers["variance"] = value
+        self.finish_test_survey()
+
+    def finish_test_survey(self):
+        goal = self.answers.get("goal")
+        variable_type = self.answers.get("variable_type")
+        normality = self.answers.get("normality")
+        dependency = self.answers.get("dependency")
+        groups = self.answers.get("groups")
+
+        if goal == "Opisać jedną zmienną":
+            test = "Statystyki opisowe"
+
+        elif goal == "Zbadać związek między zmiennymi":
+            if variable_type == "Ilościowa" and normality == "Tak":
+                test = "Korelacja Pearsona"
+            elif variable_type == "Nominalna":
+                test = "Test Chi-kwadrat niezależności"
+            else:
+                test = "Korelacja Spearmana"
+
+        elif goal == "Porównać grupy między sobą":
+            if dependency == "Niezależne":
+                if groups == "2 grupy":
+                    if variable_type == "Ilościowa" and normality == "Tak":
+                        test = "Test t-Studenta dla prób niezależnych"
+                    elif variable_type in ["Ilościowa", "Porządkowa"]:
+                        test = "Test U Manna-Whitneya"
+                    else:
+                        test = "Test Chi-kwadrat niezależności"
+                else:
+                    if variable_type == "Ilościowa" and normality == "Tak":
+                        test = "Jednoczynnikowa ANOVA"
+                    elif variable_type in ["Ilościowa", "Porządkowa"]:
+                        test = "Test Kruskala-Wallisa"
+                    else:
+                        test = "Test Chi-kwadrat niezależności"
+            else:
+                if groups == "2 grupy":
+                    if variable_type == "Ilościowa" and normality == "Tak":
+                        test = "Test t-Studenta dla prób zależnych"
+                    else:
+                        test = "Test Wilcoxona"
+                else:
+                    if variable_type == "Ilościowa" and normality == "Tak":
+                        test = "ANOVA z powtarzanym pomiarem"
+                    else:
+                        test = "Test Friedmana"
+        else:
+            test = "Nie udało się dobrać testu."
+
+        text = "=== WYNIK DOBORU TESTU ===\n\n"
+
+        for key, value in self.answers.items():
+            text += f"{key}: {value}\n"
+
+        text += f"\nRekomendowany test: {test}\n"
+
+        self.question_label.setText("Ankieta zakończona")
+        self.clear_answers()
+        self.test_result.setText(text)
+
+    def build_normality_tab(self):
+        self.normality_variable_combo = QComboBox()
+
+        self.normality_button = QPushButton("Sprawdź rozkład normalny")
+        self.normality_button.clicked.connect(self.check_normality)
+
+        self.normality_output = QTextEdit()
+        self.normality_output.setReadOnly(True)
+
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Wybierz zmienną ilościową:"))
+        layout.addWidget(self.normality_variable_combo)
+        layout.addWidget(self.normality_button)
+        layout.addWidget(self.normality_output)
+
+        self.normality_tab.setLayout(layout)
 
     def choose_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -166,11 +381,56 @@ class MainWindow(QWidget):
     def update_variable_lists(self):
         self.variable_1_combo.clear()
         self.variable_2_combo.clear()
+        self.normality_variable_combo.clear()
 
         if self.clean_df is not None:
             columns = list(self.clean_df.columns)
+
             self.variable_1_combo.addItems(columns)
             self.variable_2_combo.addItems(columns)
+
+            numeric_columns = list(
+                self.clean_df.select_dtypes(include="number").columns
+            )
+
+            self.normality_variable_combo.addItems(numeric_columns)
+
+    def check_normality(self):
+        try:
+            if self.clean_df is None:
+                self.normality_output.setText(
+                    "Najpierw wczytaj plik w zakładce 'Dane i HUBA'."
+                )
+                return
+
+            column = self.normality_variable_combo.currentText()
+
+            if column == "":
+                self.normality_output.setText(
+                    "Brak zmiennych ilościowych do sprawdzenia."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+            result = stats_engine.normality_test(self.clean_df, column)
+
+            if result is None:
+                self.normality_output.setText("Nie udało się wykonać testu.")
+                return
+
+            text = "=== TEST NORMALNOŚCI ROZKŁADU ===\n\n"
+            text += f"Test: {result['test']}\n"
+            text += f"Zmienna: {result['kolumna']}\n"
+            text += f"Statystyka W: {result['statystyka_W']:.4f}\n"
+            text += f"p-value: {result['p_value']:.4f}\n"
+            text += f"Rozkład normalny: {result['rozkład_normalny']}\n\n"
+            text += result["interpretacja"]
+
+            self.normality_output.setText(text)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Błąd", str(e))
+
 
     def run_analysis(self):
         try:

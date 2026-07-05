@@ -1,6 +1,7 @@
 
 import pandas as pd
 from scipy.stats import ttest_ind, mannwhitneyu, f_oneway, kruskal, chi2_contingency
+from scipy.stats import shapiro
 
 
 class StatisticsEngine:
@@ -223,6 +224,44 @@ class StatisticsEngine:
             return (
                 f"p = {p_value:.4f}. Wynik nie jest istotny statystycznie "
                 f"(p >= {alpha}). Brak podstaw do odrzucenia hipotezy zerowej."
+            )
+
+    def normality_test(self, df, numeric_column):
+        data = df[numeric_column].dropna()
+
+        if len(data) < 3:
+            self.report.append(
+                f"Za mało danych do testu normalności dla kolumny '{numeric_column}'."
+            )
+            return None
+
+        statistic, p_value = shapiro(data)
+
+        result = {
+            "test": "Shapiro-Wilk",
+            "kolumna": numeric_column,
+            "statystyka_W": statistic,
+            "p_value": p_value,
+            "rozkład_normalny": p_value >= 0.05,
+            "interpretacja": self.interpret_p_value_normality(p_value)
+        }
+
+        self.report.append(
+            f"Wykonano test Shapiro-Wilka dla kolumny '{numeric_column}'."
+        )
+
+        return result
+
+    def interpret_p_value_normality(self, p_value, alpha=0.05):
+        if p_value >= alpha:
+            return (
+                f"p = {p_value:.4f}. Brak podstaw do odrzucenia hipotezy "
+                f"o rozkładzie normalnym."
+            )
+        else:
+            return (
+                f"p = {p_value:.4f}. Wynik sugeruje, że rozkład różni się "
+                f"od normalnego."
             )
 
 

@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="70448f1a-bd00-4eb0-a084-cb54d0249383" name="Changes" comment="Zmiana wyglądu raportu w PDF">
+    <list default="true" id="70448f1a-bd00-4eb0-a084-cb54d0249383" name="Changes" comment="Zmiana wyglądu raportu w PDF 1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HUBA/huba.py" beforeDir="false" afterPath="$PROJECT_DIR$/HUBA/huba.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GUI/GUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/GUI/GUI.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Statistics/statistics_engine.py" beforeDir="false" afterPath="$PROJECT_DIR$/Statistics/statistics_engine.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -300,11 +301,18 @@
       <option name="project" value="LOCAL" />
       <updated>1783282014276</updated>
     </task>
-    <option name="localTasksCounter" value="31" />
+    <task id="LOCAL-00031" summary="Zmiana wyglądu raportu w PDF 1">
+      <option name="closed" value="true" />
+      <created>1783282557639</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1783282557639</updated>
+    </task>
+    <option name="localTasksCounter" value="32" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Dodano wartości podejrzanych - ujemnych i odstających" />
     <MESSAGE value="Dodano zamianę przecinków na kropki" />
     <MESSAGE value="Dodano zamianę przecinków na kropki - wersja poprawiona" />
     <MESSAGE value="Dodano usuwanie duplikatów" />
@@ -329,7 +337,8 @@
     <MESSAGE value="Zmienino sposób zapisu raportu HUBA" />
     <MESSAGE value="Poprawa zapisu do PDF" />
     <MESSAGE value="Zmiana wyglądu raportu w PDF" />
-    <option name="LAST_COMMIT_MESSAGE" value="Zmiana wyglądu raportu w PDF" />
+    <MESSAGE value="Zmiana wyglądu raportu w PDF 1" />
+    <option name="LAST_COMMIT_MESSAGE" value="Zmiana wyglądu raportu w PDF 1" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
