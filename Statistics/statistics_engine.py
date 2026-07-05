@@ -227,7 +227,7 @@ class StatisticsEngine:
             )
 
     def normality_test(self, df, numeric_column):
-        data = df[numeric_column].dropna()
+        data = pd.to_numeric(df[numeric_column], errors="coerce").dropna()
 
         if len(data) < 3:
             self.report.append(

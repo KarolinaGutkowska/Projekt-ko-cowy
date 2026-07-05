@@ -1,12 +1,12 @@
+import pandas as pd
 from PyQt6.QtWidgets import (
     QWidget, QPushButton, QVBoxLayout, QLabel, QFileDialog,
     QTextEdit, QLineEdit, QTableWidget, QTableWidgetItem,
-    QMessageBox, QComboBox, QTabWidget, QFormLayout,
-    QHBoxLayout, QButtonGroup, QRadioButton, QHBoxLayout
+    QMessageBox, QComboBox, QTabWidget, QHBoxLayout
 )
-
 from HUBA.huba import HUBA
 from Statistics.statistics_engine import StatisticsEngine
+
 
 
 class MainWindow(QWidget):
@@ -379,21 +379,19 @@ class MainWindow(QWidget):
         self.preview_table.resizeColumnsToContents()
 
     def update_variable_lists(self):
-        self.variable_1_combo.clear()
-        self.variable_2_combo.clear()
         self.normality_variable_combo.clear()
 
         if self.clean_df is not None:
-            columns = list(self.clean_df.columns)
+            numeric_columns = []
 
-            self.variable_1_combo.addItems(columns)
-            self.variable_2_combo.addItems(columns)
+            for column in self.clean_df.columns:
+                converted = pd.to_numeric(self.clean_df[column], errors="coerce")
 
-            numeric_columns = list(
-                self.clean_df.select_dtypes(include="number").columns
-            )
+                if converted.notna().sum() > 0:
+                    numeric_columns.append(column)
 
             self.normality_variable_combo.addItems(numeric_columns)
+
 
     def check_normality(self):
         try:
