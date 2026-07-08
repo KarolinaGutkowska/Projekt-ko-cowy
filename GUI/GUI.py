@@ -2,7 +2,7 @@ import pandas as pd
 from PyQt6.QtWidgets import (
     QWidget, QPushButton, QVBoxLayout, QLabel, QFileDialog,
     QTextEdit, QLineEdit, QTableWidget, QTableWidgetItem,
-    QMessageBox, QComboBox, QTabWidget, QHBoxLayout
+    QMessageBox, QComboBox, QTabWidget, QHBoxLayout, QFormLayout
 )
 from HUBA.huba import HUBA
 from Statistics.statistics_engine import StatisticsEngine
@@ -31,15 +31,19 @@ class MainWindow(QWidget):
 
         self.normality_tab = QWidget()
 
+        self.statistics_tab = QWidget()
+
         self.tabs.addTab(self.data_tab, "Dane i HUBA")
         self.tabs.addTab(self.test_tab, "Dobór testu")
         self.tabs.addTab(self.results_tab, "Wyniki")
         self.tabs.addTab(self.normality_tab, "Rozkład normalny")
+        self.tabs.addTab(self.statistics_tab, "Statystyka")
 
         self.build_data_tab()
         self.build_test_tab()
         self.build_results_tab()
         self.build_normality_tab()
+        self.build_statistics_tab()
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.tabs)
@@ -385,12 +389,22 @@ class MainWindow(QWidget):
             numeric_columns = []
 
             for column in self.clean_df.columns:
-                converted = pd.to_numeric(self.clean_df[column], errors="coerce")
+                converted = pd.to_numeric(
+                    self.clean_df[column],
+                    errors="coerce"
+                )
 
                 if converted.notna().sum() > 0:
                     numeric_columns.append(column)
 
             self.normality_variable_combo.addItems(numeric_columns)
+            self.stat_variable_1_combo.clear()
+            self.stat_variable_2_combo.clear()
+            self.stat_group_combo.clear()
+
+            self.stat_variable_1_combo.addItems(all_columns)
+            self.stat_variable_2_combo.addItems(all_columns)
+            self.stat_group_combo.addItems(all_columns)
 
 
     def check_normality(self):
@@ -429,6 +443,49 @@ class MainWindow(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Błąd", str(e))
 
+    def run_selected_statistic(self):
+        try:
+            if self.clean_df is None:
+                self.statistics_output.setText(
+                    "Najpierw wczytaj plik w zakładce 'Dane i HUBA'."
+                )
+                return
+
+            analysis = self.analysis_type_combo.currentText()
+            var1 = self.stat_variable_1_combo.currentText()
+            var2 = self.stat_variable_2_combo.currentText()
+            group = self.stat_group_combo.currentText()
+
+            stats_engine = StatisticsEngine()
+
+            if analysis == "Statystyki opisowe":
+                result = stats_engine.descriptive_statistics(self.clean_df)
+
+            elif analysis == "Korelacja Pearsona":
+                result = self.clean_df[[var1, var2]].corr(method="pearson")
+
+            elif analysis == "Test t-Studenta":
+                result = stats_engine.t_test(self.clean_df, var1, group)
+
+            elif analysis == "Mann–Whitney":
+                result = stats_engine.mann_whitney_test(self.clean_df, var1, group)
+
+            elif analysis == "ANOVA":
+                result = stats_engine.anova_test(self.clean_df, var1, group)
+
+            elif analysis == "Kruskal–Wallis":
+                result = stats_engine.kruskal_wallis_test(self.clean_df, var1, group)
+
+            elif analysis == "Chi-kwadrat":
+                result = stats_engine.chi_square_test(self.clean_df, var1, var2)
+
+            else:
+                result = "Nieznany typ analizy."
+
+            self.statistics_output.setText(str(result))
+
+        except Exception as e:
+            QMessageBox.critical(self, "Błąd", str(e))
 
     def run_analysis(self):
         try:
@@ -458,29 +515,12 @@ class MainWindow(QWidget):
                 self.statistics_report_path
             )
 
-            status_text = "=== HUBA ===\n\n"
-            status_text += "HUBA zakończyła czyszczenie danych.\n"
-            status_text += f"Oczyszczony plik zapisano jako: {self.clean_file_path}\n"
-            status_text += f"Raport HUBA zapisano jako PDF: {self.huba_pdf_path}\n"
-            status_text += f"Raport statystyczny zapisano jako: {self.statistics_report_path}\n"
-
-            self.status_output.setText(status_text)
-
-            results_text = "=== TYPY ZMIENNYCH ===\n\n"
-            for column, var_type in self.results["variable_types"].items():
-                results_text += f"{column}: {var_type}\n"
-
-            results_text += "\n=== STATYSTYKI OPISOWE ===\n\n"
-            results_text += str(self.results["descriptive_statistics"])
-
-            results_text += "\n\n=== KORELACJE PEARSONA ===\n\n"
-            results_text += str(self.results["correlations"])
-
-            results_text += "\n\n=== RAPORT STATYSTYCZNY ===\n\n"
-            for line in stats_engine.report:
-                results_text += line + "\n"
-
-            self.results_output.setText(results_text)
+            self.status_output.setText(
+                "HUBA zakończyła czyszczenie danych.\n"
+                f"Oczyszczony plik: {self.clean_file_path}\n"
+                f"Raport HUBA PDF: {self.huba_pdf_path}\n"
+                f"Raport statystyczny: {self.statistics_report_path}"
+            )
 
         except Exception as e:
             QMessageBox.critical(self, "Błąd", str(e))
@@ -548,3 +588,41 @@ class MainWindow(QWidget):
 
         text += f"Rekomendowany test: {test}\n"
         self.test_result.setText(text)
+
+    def build_statistics_tab(self):
+        self.analysis_type_combo = QComboBox()
+        self.analysis_type_combo.addItems([
+            "Statystyki opisowe",
+            "Korelacja Pearsona",
+            "Test t-Studenta",
+            "Mann–Whitney",
+            "ANOVA",
+            "Kruskal–Wallis",
+            "Chi-kwadrat"
+        ])
+
+        self.stat_variable_1_combo = QComboBox()
+        self.stat_variable_2_combo = QComboBox()
+        self.stat_group_combo = QComboBox()
+
+        self.run_stat_button = QPushButton("Wykonaj analizę")
+        self.run_stat_button.clicked.connect(self.run_selected_statistic)
+
+        self.statistics_output = QTextEdit()
+        self.statistics_output.setReadOnly(True)
+
+        form = QFormLayout()
+        form.addRow("Rodzaj analizy:", self.analysis_type_combo)
+        form.addRow("Zmienna 1:", self.stat_variable_1_combo)
+        form.addRow("Zmienna 2:", self.stat_variable_2_combo)
+        form.addRow("Zmienna grupująca:", self.stat_group_combo)
+
+        layout = QVBoxLayout()
+        layout.addLayout(form)
+        layout.addWidget(self.run_stat_button)
+        layout.addWidget(self.statistics_output)
+
+        self.statistics_tab.setLayout(layout)
+
+def run_selected_statistic(self):
+    self.statistics_output.setText("Tu będą wykonywane analizy statystyczne.")
