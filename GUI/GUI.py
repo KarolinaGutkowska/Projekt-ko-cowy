@@ -283,15 +283,28 @@ class MainWindow(QWidget):
 
             self.analysis_table_model = model
 
+
         else:
-            QMessageBox.information(
-                self,
-                "Informacja",
-                "Statystyki dla danych jakościowych zostaną dodane w kolejnym etapie."
+
+            result = stats_engine.qualitative_statistics_selected(
+
+                self.clean_df,
+
+                selected_columns
+
             )
 
-        self.current_analysis_result = result
-        self.current_analysis_name = "Statystyki opisowe"
+            model = PandasTableModel(result)
+
+            self.analysis_table.setModel(model)
+
+            self.analysis_table.resizeColumnsToContents()
+
+            self.analysis_table_model = model
+
+            self.current_analysis_result = result
+
+            self.current_analysis_name = "Statystyki opisowe - dane jakościowe"
 
     def build_normality_page(self):
         layout = QVBoxLayout()

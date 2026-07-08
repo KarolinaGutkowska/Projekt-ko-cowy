@@ -331,3 +331,30 @@ class StatisticsEngine:
             self.save_report(report_file, results)
 
         return results
+
+    #statystyi dla zmiennych jakościowych
+    def qualitative_statistics_selected(self, df, columns):
+        results = []
+
+        for column in columns:
+            data = df[column].dropna()
+            total = len(data)
+
+            if total == 0:
+                continue
+
+            counts = data.value_counts()
+            mode_value = data.mode().iloc[0] if not data.mode().empty else None
+
+            for category, count in counts.items():
+                percent = (count / total) * 100
+
+                results.append({
+                    "Zmienna": column,
+                    "Kategoria": category,
+                    "Liczebność": count,
+                    "Udział procentowy": round(percent, 2),
+                    "Dominanta": mode_value
+                })
+
+        return pd.DataFrame(results)
