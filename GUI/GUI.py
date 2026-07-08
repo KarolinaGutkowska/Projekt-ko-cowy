@@ -4,12 +4,38 @@ from PyQt6.QtWidgets import (
     QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel,
     QFileDialog, QTextEdit, QLineEdit, QTableWidget,
     QTableWidgetItem, QMessageBox, QComboBox, QStackedWidget,
-    QCheckBox, QScrollArea
+    QCheckBox, QScrollArea, QTableView
 )
+from PyQt6.QtCore import QAbstractTableModel, Qt
 
 from HUBA.huba import HUBA
 from Statistics.statistics_engine import StatisticsEngine
 
+
+class PandasTableModel(QAbstractTableModel):
+    def __init__(self, dataframe):
+        super().__init__()
+        self.dataframe = dataframe
+
+    def rowCount(self, parent=None):
+        return len(self.dataframe)
+
+    def columnCount(self, parent=None):
+        return len(self.dataframe.columns)
+
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.DisplayRole:
+            value = self.dataframe.iloc[index.row(), index.column()]
+            return str(value)
+        return None
+
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.DisplayRole:
+            if orientation == Qt.Orientation.Horizontal:
+                return str(self.dataframe.columns[section])
+            else:
+                return str(section + 1)
+        return None
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -124,14 +150,13 @@ class MainWindow(QWidget):
         self.compare_groups_button.setMinimumHeight(50)
         self.relationship_button.setMinimumHeight(50)
 
-        self.analysis_output = QTextEdit()
-        self.analysis_output.setReadOnly(True)
+        self.analysis_table = QTableWidget()
 
         layout.addWidget(title)
         layout.addWidget(self.descriptive_button)
         layout.addWidget(self.compare_groups_button)
         layout.addWidget(self.relationship_button)
-        layout.addWidget(self.analysis_output)
+        layout.addStretch()
 
         self.analysis_page.setLayout(layout)
 
@@ -214,16 +239,20 @@ class MainWindow(QWidget):
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(self.build_analysis_page)
 
-        self.analysis_output = QTextEdit()
-        self.analysis_output.setReadOnly(True)
 
         layout.addWidget(title)
         layout.addWidget(scroll_area)
         layout.addWidget(calculate_button)
         layout.addWidget(back_button)
         layout.addWidget(QLabel("Wyniki:"))
-        layout.addWidget(self.analysis_output)
 
+        self.analysis_table = QTableView()
+        layout.addWidget(self.analysis_table)
+
+        self.add_to_report_button = QPushButton("Dodaj wyniki do raportu")
+        self.add_to_report_button.setMinimumHeight(40)
+        self.add_to_report_button.clicked.connect(self.add_current_results_to_report)
+        layout.addWidget(self.add_to_report_button)
 
     def calculate_descriptive_statistics(self, data_type):
         selected_columns = []
@@ -248,15 +277,21 @@ class MainWindow(QWidget):
                 selected_columns
             )
 
-            text = "=== STATYSTYKI OPISOWE ===\n\n"
-            text += result.to_string(index=False)
+            model = PandasTableModel(result)
+            self.analysis_table.setModel(model)
+            self.analysis_table.resizeColumnsToContents()
 
-            self.analysis_output.setText(text)
+            self.analysis_table_model = model
 
         else:
-            self.analysis_output.setText(
-                "Statystyki dla danych jakościowych dodamy później."
+            QMessageBox.information(
+                self,
+                "Informacja",
+                "Statystyki dla danych jakościowych zostaną dodane w kolejnym etapie."
             )
+
+        self.current_analysis_result = result
+        self.current_analysis_name = "Statystyki opisowe"
 
     def build_normality_page(self):
         layout = QVBoxLayout()
@@ -319,6 +354,28 @@ class MainWindow(QWidget):
         layout.addWidget(self.reports_output)
 
         self.reports_page.setLayout(layout)
+
+    def add_current_results_to_report(self):
+        if not hasattr(self, "current_analysis_result"):
+            QMessageBox.warning(
+                self,
+                "Brak wyników",
+                "Najpierw wykonaj analizę."
+            )
+            return
+
+        with open(self.statistics_report_path, "a", encoding="utf-8") as file:
+            file.write("\n\n=== DODANE WYNIKI ANALIZY ===\n")
+            file.write(f"{self.current_analysis_name}\n")
+            file.write("-------------------\n")
+            file.write(self.current_analysis_result.to_string(index=False))
+            file.write("\n")
+
+        QMessageBox.information(
+            self,
+            "Zapisano",
+            f"Wyniki dodano do raportu: {self.statistics_report_path}"
+        )
 
     def choose_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
