@@ -46,10 +46,8 @@ class MainWindow(QWidget):
         buttons = [
             ("Dane", 0),
             ("Analiza", 1),
-            ("Rozkład normalny", 2),
-            ("Dobór testu", 3),
-            ("Wyniki", 4),
-            ("Raporty", 5),
+            ("Wyniki", 2),
+            ("Raporty", 3),
         ]
 
         for name, index in buttons:
@@ -119,37 +117,24 @@ class MainWindow(QWidget):
     def build_analysis_page(self):
         layout = QVBoxLayout()
 
-        self.analysis_type_combo = QComboBox()
-        self.analysis_type_combo.addItems([
-            "Statystyki opisowe",
-            "Korelacja Pearsona",
-            "Test t-Studenta",
-            "Mann–Whitney",
-            "ANOVA",
-            "Kruskal–Wallis",
-            "Chi-kwadrat"
-        ])
+        title = QLabel("Co chcesz zrobić?")
+        title.setStyleSheet("font-size: 22px; font-weight: bold; padding: 10px;")
 
-        self.analysis_var1 = QComboBox()
-        self.analysis_var2 = QComboBox()
-        self.analysis_group = QComboBox()
+        self.descriptive_button = QPushButton("Statystyka opisowa")
+        self.compare_groups_button = QPushButton("Porównanie grup pomiędzy sobą")
+        self.relationship_button = QPushButton("Badanie związku między grupami")
 
-        self.analysis_button = QPushButton("Wykonaj analizę")
-        self.analysis_button.clicked.connect(self.run_selected_statistic)
+        self.descriptive_button.setMinimumHeight(50)
+        self.compare_groups_button.setMinimumHeight(50)
+        self.relationship_button.setMinimumHeight(50)
 
         self.analysis_output = QTextEdit()
         self.analysis_output.setReadOnly(True)
 
-        layout.addWidget(QLabel("Analiza statystyczna"))
-        layout.addWidget(QLabel("Rodzaj analizy"))
-        layout.addWidget(self.analysis_type_combo)
-        layout.addWidget(QLabel("Zmienna 1"))
-        layout.addWidget(self.analysis_var1)
-        layout.addWidget(QLabel("Zmienna 2"))
-        layout.addWidget(self.analysis_var2)
-        layout.addWidget(QLabel("Zmienna grupująca"))
-        layout.addWidget(self.analysis_group)
-        layout.addWidget(self.analysis_button)
+        layout.addWidget(title)
+        layout.addWidget(self.descriptive_button)
+        layout.addWidget(self.compare_groups_button)
+        layout.addWidget(self.relationship_button)
         layout.addWidget(self.analysis_output)
 
         self.analysis_page.setLayout(layout)
