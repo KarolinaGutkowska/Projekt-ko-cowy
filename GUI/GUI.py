@@ -136,7 +136,12 @@ class MainWindow(QWidget):
         self.data_page.setLayout(layout)
 
     def build_analysis_page(self):
-        layout = QVBoxLayout()
+        if self.analysis_page.layout() is not None:
+            self.clear_analysis_page()
+            layout = self.analysis_page.layout()
+        else:
+            layout = QVBoxLayout()
+            self.analysis_page.setLayout(layout)
 
         title = QLabel("Co chcesz zrobić?")
         title.setStyleSheet("font-size: 22px; font-weight: bold; padding: 10px;")
@@ -583,3 +588,12 @@ class MainWindow(QWidget):
             f"Cel analizy: {goal}\n"
             f"Rekomendowany kierunek: {test}"
         )
+
+    def clear_analysis_page(self):
+        layout = self.analysis_page.layout()
+
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
