@@ -264,6 +264,26 @@ class StatisticsEngine:
                 f"od normalnego."
             )
 
+    def descriptive_statistics_selected(self, df, columns):
+        results = []
+
+        for column in columns:
+            data = pd.to_numeric(df[column], errors="coerce").dropna()
+            n = len(data)
+
+            if n == 0:
+                continue
+
+            results.append({
+                "Zmienna": column,
+                "N": n,
+                "Średnia": round(data.mean(), 4),
+                "Mediana": round(data.median(), 4),
+                "Odchylenie standardowe": round(data.std(ddof=1), 4)
+            })
+
+        return pd.DataFrame(results)
+
 
     #Zapisywanie raportu statystycznego
     def save_report(self, report_file, results):
@@ -294,6 +314,7 @@ class StatisticsEngine:
 
             for line in self.report:
                 file.write(line + "\n")
+
 
     def run(self, df, report_file=None):
         variable_types = self.detect_variable_types(df)

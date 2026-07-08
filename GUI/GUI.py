@@ -3,7 +3,8 @@ import pandas as pd
 from PyQt6.QtWidgets import (
     QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel,
     QFileDialog, QTextEdit, QLineEdit, QTableWidget,
-    QTableWidgetItem, QMessageBox, QComboBox, QStackedWidget
+    QTableWidgetItem, QMessageBox, QComboBox, QStackedWidget,
+    QCheckBox, QScrollArea
 )
 
 from HUBA.huba import HUBA
@@ -61,22 +62,16 @@ class MainWindow(QWidget):
     def build_pages(self):
         self.data_page = QWidget()
         self.analysis_page = QWidget()
-        self.normality_page = QWidget()
-        self.test_page = QWidget()
         self.results_page = QWidget()
         self.reports_page = QWidget()
 
         self.build_data_page()
         self.build_analysis_page()
-        self.build_normality_page()
-        self.build_test_page()
         self.build_results_page()
         self.build_reports_page()
 
         self.content.addWidget(self.data_page)
         self.content.addWidget(self.analysis_page)
-        self.content.addWidget(self.normality_page)
-        self.content.addWidget(self.test_page)
         self.content.addWidget(self.results_page)
         self.content.addWidget(self.reports_page)
 
@@ -121,6 +116,7 @@ class MainWindow(QWidget):
         title.setStyleSheet("font-size: 22px; font-weight: bold; padding: 10px;")
 
         self.descriptive_button = QPushButton("Statystyka opisowa")
+        self.descriptive_button.clicked.connect(self.show_descriptive_data_type_question)
         self.compare_groups_button = QPushButton("Porównanie grup pomiędzy sobą")
         self.relationship_button = QPushButton("Badanie związku między grupami")
 
@@ -138,6 +134,129 @@ class MainWindow(QWidget):
         layout.addWidget(self.analysis_output)
 
         self.analysis_page.setLayout(layout)
+
+    def show_descriptive_data_type_question(self):
+
+
+        layout = self.analysis_page.layout()
+
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        title = QLabel("Rodzaj danych:")
+        title.setStyleSheet("font-size: 22px; font-weight: bold; padding: 10px;")
+
+        quantitative_button = QPushButton("Dane ilościowe")
+        qualitative_button = QPushButton("Dane jakościowe")
+        quantitative_button.clicked.connect(
+            lambda: self.show_variable_checkbox_list("ilościowe")
+        )
+
+        qualitative_button.clicked.connect(
+            lambda: self.show_variable_checkbox_list("jakościowe")
+        )
+
+        quantitative_button.setMinimumHeight(50)
+        qualitative_button.setMinimumHeight(50)
+
+        layout.addWidget(title)
+        layout.addWidget(quantitative_button)
+        layout.addWidget(qualitative_button)
+        layout.addStretch()
+
+    def show_variable_checkbox_list(self, data_type):
+        if self.clean_df is None:
+            QMessageBox.warning(
+                self,
+                "Brak danych",
+                "Najpierw wczytaj plik w zakładce Dane."
+            )
+            return
+
+        layout = self.analysis_page.layout()
+
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        title = QLabel("Wybierz z listy zmienne, dla których chcesz obliczyć statystyki:")
+        title.setStyleSheet("font-size: 18px; font-weight: bold; padding: 10px;")
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+
+        scroll_content = QWidget()
+        checkbox_layout = QVBoxLayout()
+
+        self.selected_variable_checkboxes = []
+
+        for column in self.clean_df.columns:
+            checkbox = QCheckBox(str(column))
+            self.selected_variable_checkboxes.append(checkbox)
+            checkbox_layout.addWidget(checkbox)
+
+        checkbox_layout.addStretch()
+        scroll_content.setLayout(checkbox_layout)
+        scroll_area.setWidget(scroll_content)
+
+        calculate_button = QPushButton("Oblicz statystyki")
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            lambda: self.calculate_descriptive_statistics(data_type)
+        )
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(self.build_analysis_page)
+
+        self.analysis_output = QTextEdit()
+        self.analysis_output.setReadOnly(True)
+
+        layout.addWidget(title)
+        layout.addWidget(scroll_area)
+        layout.addWidget(calculate_button)
+        layout.addWidget(back_button)
+        layout.addWidget(QLabel("Wyniki:"))
+        layout.addWidget(self.analysis_output)
+
+
+    def calculate_descriptive_statistics(self, data_type):
+        selected_columns = []
+
+        for checkbox in self.selected_variable_checkboxes:
+            if checkbox.isChecked():
+                selected_columns.append(checkbox.text())
+
+        if not selected_columns:
+            QMessageBox.warning(
+                self,
+                "Brak wyboru",
+                "Wybierz przynajmniej jedną zmienną."
+            )
+            return
+
+        stats_engine = StatisticsEngine()
+
+        if data_type == "ilościowe":
+            result = stats_engine.descriptive_statistics_selected(
+                self.clean_df,
+                selected_columns
+            )
+
+            text = "=== STATYSTYKI OPISOWE ===\n\n"
+            text += result.to_string(index=False)
+
+            self.analysis_output.setText(text)
+
+        else:
+            self.analysis_output.setText(
+                "Statystyki dla danych jakościowych dodamy później."
+            )
 
     def build_normality_page(self):
         layout = QVBoxLayout()
@@ -283,28 +402,6 @@ class MainWindow(QWidget):
     def update_variable_lists(self):
         if self.clean_df is None:
             return
-
-        all_columns = list(self.clean_df.columns)
-
-        self.analysis_var1.clear()
-        self.analysis_var2.clear()
-        self.analysis_group.clear()
-        self.normality_variable_combo.clear()
-
-        self.analysis_var1.addItems(all_columns)
-        self.analysis_var2.addItems(all_columns)
-        self.analysis_group.addItems(all_columns)
-
-        numeric_columns = []
-
-        for column in self.clean_df.columns:
-            converted = pd.to_numeric(self.clean_df[column], errors="coerce")
-            valid_ratio = converted.notna().sum() / len(converted)
-
-            if valid_ratio >= 0.8:
-                numeric_columns.append(column)
-
-        self.normality_variable_combo.addItems(numeric_columns)
 
     def run_selected_statistic(self):
         try:
