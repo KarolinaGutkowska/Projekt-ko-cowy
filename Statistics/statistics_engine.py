@@ -23,6 +23,23 @@ class StatisticsEngine:
 
         return variable_types
 
+    def run_test(self, test_id, df, independent_var, dependent_var):
+        if test_id == "chi_square":
+            return self.chi_square_test(
+                df,
+                independent_var,
+                dependent_var
+            )
+
+        elif test_id == "mann_whitney":
+            return self.mann_whitney_test(
+                df,
+                numeric_column=dependent_var,
+                group_column=independent_var
+            )
+
+        else:
+            return None
     #Statystyki opisowe
     def descriptive_statistics(self, df):
         numeric_df = df.select_dtypes(include="number")

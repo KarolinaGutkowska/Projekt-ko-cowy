@@ -310,16 +310,20 @@ class MainWindow(QWidget):
                 and self.compare_groups_count == "Tylko 2"
                 and self.compare_variable_type == "Nominalna"
         ):
-            self.show_recommended_test("Test Chi-kwadrat niezależności")
-            return
+            self.show_recommended_test(
+                "chi_square",
+                "Test Chi-kwadrat niezależności"
+            )
 
         if (
                 self.compare_dependency == "Niezależne"
                 and self.compare_groups_count == "Tylko 2"
                 and self.compare_variable_type == "Porządkowa"
         ):
-            self.show_recommended_test("Test U Manna-Whitneya")
-            return
+            self.show_recommended_test(
+                "mann_whitney",
+                "Test U Manna-Whitneya"
+            )
 
     def show_recommended_test(self, test_name):
         self.clear_analysis_page()
@@ -332,7 +336,7 @@ class MainWindow(QWidget):
             padding:10px;
         """)
 
-        result = QLabel(test_name)
+        result = QLabel(display_name)
         result.setStyleSheet("""
             font-size:20px;
             padding:10px;
@@ -362,7 +366,7 @@ class MainWindow(QWidget):
         calculate_test_button = QPushButton("Oblicz statystyki")
         calculate_test_button.setMinimumHeight(45)
         calculate_test_button.clicked.connect(
-            lambda: self.calculate_recommended_test(test_name)
+            lambda: self.calculate_recommended_test(test_id, display_name)
         )
 
         add_test_to_report_button = QPushButton("Dodaj do raportu")
@@ -380,47 +384,29 @@ class MainWindow(QWidget):
         layout.addWidget(back_button)
         layout.addStretch()
 
-    def calculate_recommended_test(self, test_name):
+    def calculate_recommended_test(self, test_id, display_name):
         independent_var = self.independent_variable_combo.currentText()
         dependent_var = self.dependent_variable_combo.currentText()
 
         stats_engine = StatisticsEngine()
         formatter = ReportFormatter()
 
-        if test_name == "Test Chi-kwadrat niezależności":
-            result = stats_engine.chi_square_test(
-                self.clean_df,
-                independent_var,
-                dependent_var
-            )
+        result = stats_engine.run_test(
+            test_id,
+            self.clean_df,
+            independent_var,
+            dependent_var
+        )
 
-            text = formatter.format_chi_square(
-                result,
-                independent_var,
-                dependent_var
-            )
-
-        elif test_name == "Test U Manna-Whitneya":
-            result = stats_engine.mann_whitney_test(
-                self.clean_df,
-                numeric_column=dependent_var,
-                group_column=independent_var
-            )
-
-            if result is None:
-                text = "Nie udało się wykonać testu U Manna-Whitneya."
-            else:
-                text = formatter.format_mann_whitney(
-                    result,
-                    independent_var,
-                    dependent_var
-                )
-
-        else:
-            text = "Ten test zostanie dodany później."
+        text = formatter.format(
+            test_id,
+            result,
+            independent_var,
+            dependent_var
+        )
 
         self.current_analysis_result = text
-        self.current_analysis_name = test_name
+        self.current_analysis_name = display_name
 
         self.recommended_test_output.setText(text)
     def show_variable_checkbox_list(self, data_type):

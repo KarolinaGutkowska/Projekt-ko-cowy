@@ -1,5 +1,26 @@
 class ReportFormatter:
 
+    def format(self, test_id, result, independent_var, dependent_var):
+        if result is None:
+            return f"Nie udało się wykonać testu: {test_id}"
+
+        if test_id == "chi_square":
+            return self.format_chi_square(
+                result,
+                independent_var,
+                dependent_var
+            )
+
+        elif test_id == "mann_whitney":
+            return self.format_mann_whitney(
+                result,
+                independent_var,
+                dependent_var
+            )
+
+        else:
+            return "Formatowanie tego testu zostanie dodane później."
+
     def format_chi_square(self, result, independent_var, dependent_var):
         return f"""
 ========================================
