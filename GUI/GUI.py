@@ -233,6 +233,39 @@ class MainWindow(QWidget):
     def compare_groups_question_2(self, dependency):
         self.compare_dependency = dependency
 
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Ile grup porównujesz?")
+        title.setStyleSheet("""
+            font-size:22px;
+            font-weight:bold;
+            padding:10px;
+        """)
+
+        two_groups_button = QPushButton("Tylko 2")
+        more_groups_button = QPushButton("Więcej niż 2")
+
+        two_groups_button.setMinimumHeight(50)
+        more_groups_button.setMinimumHeight(50)
+
+        two_groups_button.clicked.connect(
+            lambda: self.compare_groups_question_3("Tylko 2")
+        )
+
+        more_groups_button.clicked.connect(
+            lambda: self.compare_groups_question_3("Więcej niż 2")
+        )
+
+        layout.addWidget(title)
+        layout.addWidget(two_groups_button)
+        layout.addWidget(more_groups_button)
+        layout.addStretch()
+
+    def compare_groups_question_3(self, groups_count):
+        self.compare_groups_count = groups_count
+
+
     def show_variable_checkbox_list(self, data_type):
         if self.clean_df is None:
             QMessageBox.warning(
