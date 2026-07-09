@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
     QCheckBox, QScrollArea, QTableView
 )
 from PyQt6.QtCore import QAbstractTableModel, Qt
+from PyQt6.QtCore import QTimer
 
 from HUBA.huba import HUBA
 from Statistics.statistics_engine import StatisticsEngine
@@ -324,6 +325,159 @@ class MainWindow(QWidget):
                 "mann_whitney",
                 "Test U Manna-Whitneya"
             )
+        if (
+                self.compare_dependency == "Niezależne"
+                and self.compare_groups_count == "Tylko 2"
+                and self.compare_variable_type == "Ilościowa"
+        ):
+            self.show_normality_question_for_compare_groups()
+            return
+
+    def show_normality_question_for_compare_groups(self):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Czy rozkład jest normalny?")
+        title.setStyleSheet("""
+            font-size:22px;
+            font-weight:bold;
+            padding:10px;
+        """)
+
+        self.compare_normality_variable_combo = QComboBox()
+
+        if self.clean_df is not None:
+            numeric_columns = []
+
+            for column in self.clean_df.columns:
+                converted = pd.to_numeric(self.clean_df[column], errors="coerce")
+                valid_ratio = converted.notna().sum() / len(converted)
+
+                if valid_ratio >= 0.8:
+                    numeric_columns.append(column)
+
+            self.compare_normality_variable_combo.addItems(numeric_columns)
+
+        normality_button = QPushButton("Oblicz rozkład normalny")
+        normality_button.setMinimumHeight(45)
+        normality_button.clicked.connect(self.calculate_compare_normality)
+
+        yes_button = QPushButton("Tak")
+        no_button = QPushButton("Nie")
+
+        yes_button.setMinimumHeight(50)
+        no_button.setMinimumHeight(50)
+
+        yes_button.clicked.connect(
+            lambda: self.show_recommended_test_below(
+                "t_independent",
+                "Test t-Studenta dla prób niezależnych"
+            )
+        )
+
+        no_button.clicked.connect(
+            lambda: self.show_recommended_test_below(
+                "mann_whitney",
+                "Test U Manna-Whitneya"
+            )
+        )
+        self.compare_normality_output = QTextEdit()
+        self.compare_normality_output.setReadOnly(True)
+
+        layout.addWidget(title)
+        layout.addWidget(QLabel("Wybierz zmienną do sprawdzenia normalności:"))
+        layout.addWidget(self.compare_normality_variable_combo)
+        layout.addWidget(normality_button)
+        layout.addWidget(self.compare_normality_output)
+        layout.addWidget(yes_button)
+        layout.addWidget(no_button)
+        layout.addStretch()
+
+    def show_recommended_test_below(self, test_id, display_name):
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Rekomendowany test:")
+        title.setStyleSheet("""
+            font-size:22px;
+            font-weight:bold;
+            padding:10px;
+        """)
+
+        result = QLabel(display_name)
+        result.setStyleSheet("""
+            font-size:20px;
+            padding:10px;
+        """)
+
+        self.independent_variable_combo = QComboBox()
+        self.dependent_variable_combo = QComboBox()
+
+        if self.clean_df is not None:
+            columns = list(self.clean_df.columns)
+            self.independent_variable_combo.addItems(columns)
+            self.dependent_variable_combo.addItems(columns)
+
+        calculate_test_button = QPushButton("Oblicz statystyki")
+        calculate_test_button.setMinimumHeight(45)
+        calculate_test_button.clicked.connect(
+            lambda: self.calculate_recommended_test(test_id, display_name)
+        )
+
+        add_test_to_report_button = QPushButton("Dodaj do raportu")
+        add_test_to_report_button.setMinimumHeight(45)
+        add_test_to_report_button.clicked.connect(self.add_current_results_to_report)
+
+        self.recommended_test_output = QTextEdit()
+        self.recommended_test_output.setReadOnly(True)
+
+        layout.addWidget(title)
+        layout.addWidget(result)
+
+        layout.addWidget(QLabel("Zmienna niezależna / grupująca:"))
+        layout.addWidget(self.independent_variable_combo)
+
+        layout.addWidget(QLabel("Zmienna zależna:"))
+        layout.addWidget(self.dependent_variable_combo)
+
+        layout.addWidget(calculate_test_button)
+        layout.addWidget(add_test_to_report_button)
+        layout.addWidget(QLabel("Wyniki:"))
+        layout.addWidget(self.recommended_test_output)
+
+
+
+    def calculate_compare_normality(self):
+        try:
+            if self.clean_df is None:
+                self.compare_normality_output.setText("Najpierw wczytaj plik.")
+                return
+
+            column = self.compare_normality_variable_combo.currentText()
+
+            if column == "":
+                self.compare_normality_output.setText("Brak zmiennych ilościowych.")
+                return
+
+            stats_engine = StatisticsEngine()
+            result = stats_engine.normality_test(self.clean_df, column)
+
+            if result is None:
+                self.compare_normality_output.setText("Nie udało się wykonać testu normalności.")
+                return
+
+            text = "=== TEST NORMALNOŚCI ROZKŁADU ===\n\n"
+            text += f"Test: {result['test']}\n"
+            text += f"Zmienna: {result['kolumna']}\n"
+            text += f"Statystyka W: {result['statystyka_W']:.4f}\n"
+            text += f"p-value: {result['p_value']:.4f}\n"
+            text += f"Rozkład normalny: {result['rozkład_normalny']}\n\n"
+            text += result["interpretacja"]
+
+            self.compare_normality_output.setText(text)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Błąd", str(e))
+
 
     def show_recommended_test(self, test_name):
         self.clear_analysis_page()

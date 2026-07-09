@@ -37,7 +37,12 @@ class StatisticsEngine:
                 numeric_column=dependent_var,
                 group_column=independent_var
             )
-
+        elif test_id == "t_independent":
+            return self.t_test(
+                df,
+                numeric_column=dependent_var,
+                group_column=independent_var
+            )
         else:
             return None
     #Statystyki opisowe
@@ -68,6 +73,32 @@ class StatisticsEngine:
 
         return correlation_matrix
 
+    def format_t_independent(self, result, independent_var, dependent_var):
+        return f"""
+    ========================================
+    TEST T-STUDENTA DLA PRÓB NIEZALEŻNYCH
+    ========================================
+
+    ZMIENNA GRUPUJĄCA:
+    {independent_var}
+
+    ZMIENNA ZALEŻNA:
+    {dependent_var}
+
+    GRUPA 1:
+    {result['grupa_1']}
+
+    GRUPA 2:
+    {result['grupa_2']}
+
+    WYNIKI TESTU:
+    t = {result['statystyka_t']:.4f}
+    p-value = {result['p_value']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+    ========================================
+    """
     #T-test
     def t_test(self, df, numeric_column, group_column):
         groups = df[group_column].dropna().unique()
