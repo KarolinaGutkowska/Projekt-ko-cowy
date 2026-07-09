@@ -265,6 +265,148 @@ class MainWindow(QWidget):
     def compare_groups_question_3(self, groups_count):
         self.compare_groups_count = groups_count
 
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Jaką masz zmienną zależną?")
+        title.setStyleSheet("""
+            font-size:22px;
+            font-weight:bold;
+            padding:10px;
+        """)
+
+        nominal_button = QPushButton("Nominalną")
+        ordinal_button = QPushButton("Porządkową")
+        quantitative_button = QPushButton("Ilościową")
+
+        nominal_button.setMinimumHeight(50)
+        ordinal_button.setMinimumHeight(50)
+        quantitative_button.setMinimumHeight(50)
+
+        nominal_button.clicked.connect(
+            lambda: self.compare_groups_question_4("Nominalna")
+        )
+
+        ordinal_button.clicked.connect(
+            lambda: self.compare_groups_question_4("Porządkowa")
+        )
+
+        quantitative_button.clicked.connect(
+            lambda: self.compare_groups_question_4("Ilościowa")
+        )
+
+        layout.addWidget(title)
+        layout.addWidget(nominal_button)
+        layout.addWidget(ordinal_button)
+        layout.addWidget(quantitative_button)
+        layout.addStretch()
+
+    def compare_groups_question_4(self, variable_type):
+        self.compare_variable_type = variable_type
+
+        if (
+                self.compare_dependency == "Niezależne"
+                and self.compare_groups_count == "Tylko 2"
+                and self.compare_variable_type == "Nominalna"
+        ):
+            self.show_recommended_test("Test Chi-kwadrat niezależności")
+            return
+
+    def show_recommended_test(self, test_name):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Rekomendowany test:")
+        title.setStyleSheet("""
+            font-size:22px;
+            font-weight:bold;
+            padding:10px;
+        """)
+
+        result = QLabel(test_name)
+        result.setStyleSheet("""
+            font-size:20px;
+            padding:10px;
+        """)
+
+        self.independent_variable_combo = QComboBox()
+        self.dependent_variable_combo = QComboBox()
+
+        if self.clean_df is not None:
+            columns = list(self.clean_df.columns)
+            self.independent_variable_combo.addItems(columns)
+            self.dependent_variable_combo.addItems(columns)
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(self.build_analysis_page)
+
+        layout.addWidget(title)
+        layout.addWidget(result)
+
+        layout.addWidget(QLabel("Zmienna niezależna:"))
+        layout.addWidget(self.independent_variable_combo)
+
+        layout.addWidget(QLabel("Zmienna zależna:"))
+        layout.addWidget(self.dependent_variable_combo)
+
+        calculate_test_button = QPushButton("Oblicz statystyki")
+        calculate_test_button.setMinimumHeight(45)
+        calculate_test_button.clicked.connect(
+            lambda: self.calculate_recommended_test(test_name)
+        )
+
+        add_test_to_report_button = QPushButton("Dodaj do raportu")
+        add_test_to_report_button.setMinimumHeight(45)
+        add_test_to_report_button.clicked.connect(self.add_current_results_to_report)
+
+        self.recommended_test_output = QTextEdit()
+        self.recommended_test_output.setReadOnly(True)
+
+        layout.addWidget(calculate_test_button)
+        layout.addWidget(add_test_to_report_button)
+        layout.addWidget(QLabel("Wyniki:"))
+        layout.addWidget(self.recommended_test_output)
+
+        layout.addWidget(back_button)
+        layout.addStretch()
+
+    def calculate_recommended_test(self, test_name):
+        independent_var = self.independent_variable_combo.currentText()
+        dependent_var = self.dependent_variable_combo.currentText()
+
+        stats_engine = StatisticsEngine()
+
+        if test_name == "Test Chi-kwadrat niezależności":
+            result = stats_engine.chi_square_test(
+                self.clean_df,
+                independent_var,
+                dependent_var
+            )
+
+            text = "=== WYNIK TESTU CHI-KWADRAT NIEZALEŻNOŚCI ===\n\n"
+            text += f"Zmienna niezależna: {independent_var}\n"
+            text += f"Zmienna zależna: {dependent_var}\n\n"
+            text += f"Statystyka chi²: {result['chi2']:.4f}\n"
+            text += f"Stopnie swobody: {result['degrees_of_freedom']}\n"
+            text += f"p-value: {result['p_value']:.4f}\n\n"
+
+            if result["istotne_statystycznie"]:
+                text += "Wynik: istotny statystycznie.\n"
+                text += "Interpretacja: istnieje zależność między zmiennymi.\n"
+            else:
+                text += "Wynik: nieistotny statystycznie.\n"
+                text += "Interpretacja: brak podstaw do stwierdzenia zależności między zmiennymi.\n"
+
+            self.current_analysis_result = text
+            self.current_analysis_name = test_name
+
+            self.recommended_test_output.setText(text)
+
+        else:
+            self.recommended_test_output.setText(
+                "Ten test zostanie dodany później."
+            )
 
     def show_variable_checkbox_list(self, data_type):
         if self.clean_df is None:
@@ -443,27 +585,39 @@ class MainWindow(QWidget):
         self.reports_page.setLayout(layout)
 
     def add_current_results_to_report(self):
-        if not hasattr(self, "current_analysis_result"):
-            QMessageBox.warning(
+        try:
+            if not hasattr(self, "current_analysis_result"):
+                QMessageBox.warning(
+                    self,
+                    "Brak wyników",
+                    "Najpierw wykonaj analizę."
+                )
+                return
+
+            with open(self.statistics_report_path, "a", encoding="utf-8") as file:
+                file.write("\n\n=== DODANE WYNIKI ANALIZY ===\n")
+                file.write(f"{self.current_analysis_name}\n")
+                file.write("-------------------\n")
+
+                if hasattr(self.current_analysis_result, "to_string"):
+                    file.write(self.current_analysis_result.to_string(index=False))
+                else:
+                    file.write(str(self.current_analysis_result))
+
+                file.write("\n")
+
+            QMessageBox.information(
                 self,
-                "Brak wyników",
-                "Najpierw wykonaj analizę."
+                "Zapisano",
+                f"Wyniki dodano do raportu: {self.statistics_report_path}"
             )
-            return
 
-        with open(self.statistics_report_path, "a", encoding="utf-8") as file:
-            file.write("\n\n=== DODANE WYNIKI ANALIZY ===\n")
-            file.write(f"{self.current_analysis_name}\n")
-            file.write("-------------------\n")
-            file.write(self.current_analysis_result.to_string(index=False))
-            file.write("\n")
-
-        QMessageBox.information(
-            self,
-            "Zapisano",
-            f"Wyniki dodano do raportu: {self.statistics_report_path}"
-        )
-
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Błąd zapisu do raportu",
+                str(e)
+            )
     def choose_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
