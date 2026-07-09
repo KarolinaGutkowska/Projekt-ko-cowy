@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="70448f1a-bd00-4eb0-a084-cb54d0249383" name="Changes" comment="Zmiana wyglądu raportu w PDF 1">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="70448f1a-bd00-4eb0-a084-cb54d0249383" name="Changes" comment="Rozwój porównywania grup między sobą - Test Chi-kwadrat niezależności">
+      <change afterPath="$PROJECT_DIR$/Statistics/report_formatter.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/GUI/GUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/GUI/GUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Statistics/statistics_engine.py" beforeDir="false" afterPath="$PROJECT_DIR$/Statistics/statistics_engine.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dane_clean.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/dane_clean.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/reports/huba_report.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/reports/huba_report.pdf" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -309,21 +317,106 @@
       <option name="project" value="LOCAL" />
       <updated>1783282557639</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="Dodano zakładkę z rozkłądem normalnym">
+      <option name="closed" value="true" />
+      <created>1783290562336</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1783290562336</updated>
+    </task>
+    <task id="LOCAL-00033" summary="Dodano możliwość sprawdzenia czy rozkłąd jest normalny">
+      <option name="closed" value="true" />
+      <created>1783291676368</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1783291676368</updated>
+    </task>
+    <task id="LOCAL-00034" summary="Rozposczęto pracę na d zakłądką statystyka">
+      <option name="closed" value="true" />
+      <created>1783524585071</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1783524585071</updated>
+    </task>
+    <task id="LOCAL-00035" summary="Zmiana wyglądu GUI">
+      <option name="closed" value="true" />
+      <created>1783529570977</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1783529570994</updated>
+    </task>
+    <task id="LOCAL-00036" summary="Zmianaarchitektury zakładki Analiza">
+      <option name="closed" value="true" />
+      <created>1783533280203</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1783533280203</updated>
+    </task>
+    <task id="LOCAL-00037" summary="Statystyki ilościowe 1.">
+      <option name="closed" value="true" />
+      <created>1783542756993</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1783542756993</updated>
+    </task>
+    <task id="LOCAL-00038" summary="Statystyki ilościowe 2.">
+      <option name="closed" value="true" />
+      <created>1783545782873</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1783545782873</updated>
+    </task>
+    <task id="LOCAL-00039" summary="Dodano statystyki dla zmiennych jakościowych">
+      <option name="closed" value="true" />
+      <created>1783551812348</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1783551812348</updated>
+    </task>
+    <task id="LOCAL-00040" summary="Dodano przycisk wstecz">
+      <option name="closed" value="true" />
+      <created>1783552364129</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1783552364129</updated>
+    </task>
+    <task id="LOCAL-00041" summary="Rozwój porównywania grup między sobą">
+      <option name="closed" value="true" />
+      <created>1783595026141</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1783595026141</updated>
+    </task>
+    <task id="LOCAL-00042" summary="Rozwój porównywania grup między sobą - wybór ilości grup">
+      <option name="closed" value="true" />
+      <created>1783595511675</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1783595511675</updated>
+    </task>
+    <task id="LOCAL-00043" summary="Rozwój porównywania grup między sobą - Test Chi-kwadrat niezależności">
+      <option name="closed" value="true" />
+      <created>1783598972731</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1783598972731</updated>
+    </task>
+    <option name="localTasksCounter" value="44" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Dodano zamianę przecinków na kropki" />
-    <MESSAGE value="Dodano zamianę przecinków na kropki - wersja poprawiona" />
-    <MESSAGE value="Dodano usuwanie duplikatów" />
-    <MESSAGE value="Wersja poprawiona" />
-    <MESSAGE value="Dodano wykrywanie niewłaściwych typów danych" />
-    <MESSAGE value="Dodano zapisywanie raportu i zapisywanie oczyszczonej bazy danych" />
-    <MESSAGE value="Dodano usuwanie pustych wierszy" />
-    <MESSAGE value="Dodano statystyki opisowe" />
-    <MESSAGE value="Dodano korelacje" />
-    <MESSAGE value="Dodano test Mann–Whitney" />
-    <MESSAGE value="Dodano test ANOVA" />
     <MESSAGE value="Dodano test chi-kwadrat" />
     <MESSAGE value="Dodano automatyczną interpretację p-value" />
     <MESSAGE value="Poprawiona wersja" />
@@ -333,12 +426,23 @@
     <MESSAGE value="Dodano wybór z listy zadania do wykonania" />
     <MESSAGE value="Dodano wybór z listy zadania do wykonania - poprawiona wersja" />
     <MESSAGE value="Dodano zakładkę Dobór testu oraz ankietę" />
-    <MESSAGE value="Zmiana wyglądu GUI" />
     <MESSAGE value="Zmienino sposób zapisu raportu HUBA" />
     <MESSAGE value="Poprawa zapisu do PDF" />
     <MESSAGE value="Zmiana wyglądu raportu w PDF" />
     <MESSAGE value="Zmiana wyglądu raportu w PDF 1" />
-    <option name="LAST_COMMIT_MESSAGE" value="Zmiana wyglądu raportu w PDF 1" />
+    <MESSAGE value="Dodano zakładkę z rozkłądem normalnym" />
+    <MESSAGE value="Dodano możliwość sprawdzenia czy rozkłąd jest normalny" />
+    <MESSAGE value="Rozposczęto pracę na d zakłądką statystyka" />
+    <MESSAGE value="Zmiana wyglądu GUI" />
+    <MESSAGE value="Zmianaarchitektury zakładki Analiza" />
+    <MESSAGE value="Statystyki ilościowe 1." />
+    <MESSAGE value="Statystyki ilościowe 2." />
+    <MESSAGE value="Dodano statystyki dla zmiennych jakościowych" />
+    <MESSAGE value="Dodano przycisk wstecz" />
+    <MESSAGE value="Rozwój porównywania grup między sobą" />
+    <MESSAGE value="Rozwój porównywania grup między sobą - wybór ilości grup" />
+    <MESSAGE value="Rozwój porównywania grup między sobą - Test Chi-kwadrat niezależności" />
+    <option name="LAST_COMMIT_MESSAGE" value="Rozwój porównywania grup między sobą - Test Chi-kwadrat niezależności" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

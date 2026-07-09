@@ -10,6 +10,7 @@ from PyQt6.QtCore import QAbstractTableModel, Qt
 
 from HUBA.huba import HUBA
 from Statistics.statistics_engine import StatisticsEngine
+from Statistics.report_formatter import ReportFormatter
 
 
 class PandasTableModel(QAbstractTableModel):
@@ -312,6 +313,14 @@ class MainWindow(QWidget):
             self.show_recommended_test("Test Chi-kwadrat niezależności")
             return
 
+        if (
+                self.compare_dependency == "Niezależne"
+                and self.compare_groups_count == "Tylko 2"
+                and self.compare_variable_type == "Porządkowa"
+        ):
+            self.show_recommended_test("Test U Manna-Whitneya")
+            return
+
     def show_recommended_test(self, test_name):
         self.clear_analysis_page()
         layout = self.analysis_page.layout()
@@ -376,6 +385,7 @@ class MainWindow(QWidget):
         dependent_var = self.dependent_variable_combo.currentText()
 
         stats_engine = StatisticsEngine()
+        formatter = ReportFormatter()
 
         if test_name == "Test Chi-kwadrat niezależności":
             result = stats_engine.chi_square_test(
@@ -384,30 +394,35 @@ class MainWindow(QWidget):
                 dependent_var
             )
 
-            text = "=== WYNIK TESTU CHI-KWADRAT NIEZALEŻNOŚCI ===\n\n"
-            text += f"Zmienna niezależna: {independent_var}\n"
-            text += f"Zmienna zależna: {dependent_var}\n\n"
-            text += f"Statystyka chi²: {result['chi2']:.4f}\n"
-            text += f"Stopnie swobody: {result['degrees_of_freedom']}\n"
-            text += f"p-value: {result['p_value']:.4f}\n\n"
-
-            if result["istotne_statystycznie"]:
-                text += "Wynik: istotny statystycznie.\n"
-                text += "Interpretacja: istnieje zależność między zmiennymi.\n"
-            else:
-                text += "Wynik: nieistotny statystycznie.\n"
-                text += "Interpretacja: brak podstaw do stwierdzenia zależności między zmiennymi.\n"
-
-            self.current_analysis_result = text
-            self.current_analysis_name = test_name
-
-            self.recommended_test_output.setText(text)
-
-        else:
-            self.recommended_test_output.setText(
-                "Ten test zostanie dodany później."
+            text = formatter.format_chi_square(
+                result,
+                independent_var,
+                dependent_var
             )
 
+        elif test_name == "Test U Manna-Whitneya":
+            result = stats_engine.mann_whitney_test(
+                self.clean_df,
+                numeric_column=dependent_var,
+                group_column=independent_var
+            )
+
+            if result is None:
+                text = "Nie udało się wykonać testu U Manna-Whitneya."
+            else:
+                text = formatter.format_mann_whitney(
+                    result,
+                    independent_var,
+                    dependent_var
+                )
+
+        else:
+            text = "Ten test zostanie dodany później."
+
+        self.current_analysis_result = text
+        self.current_analysis_name = test_name
+
+        self.recommended_test_output.setText(text)
     def show_variable_checkbox_list(self, data_type):
         if self.clean_df is None:
             QMessageBox.warning(
