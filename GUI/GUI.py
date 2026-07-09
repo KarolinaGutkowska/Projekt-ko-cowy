@@ -149,6 +149,9 @@ class MainWindow(QWidget):
         self.descriptive_button = QPushButton("Statystyka opisowa")
         self.descriptive_button.clicked.connect(self.show_descriptive_data_type_question)
         self.compare_groups_button = QPushButton("Porównanie grup pomiędzy sobą")
+        self.compare_groups_button.clicked.connect(
+            self.show_compare_groups_question_1
+        )
         self.relationship_button = QPushButton("Badanie związku między grupami")
 
         self.descriptive_button.setMinimumHeight(50)
@@ -196,6 +199,39 @@ class MainWindow(QWidget):
         layout.addWidget(quantitative_button)
         layout.addWidget(qualitative_button)
         layout.addStretch()
+
+    def show_compare_groups_question_1(self):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Jaki charakter mają zmienne?")
+        title.setStyleSheet("""
+            font-size:22px;
+            font-weight:bold;
+            padding:10px;
+        """)
+
+        dependent_button = QPushButton("Zależne")
+        independent_button = QPushButton("Niezależne")
+
+        dependent_button.setMinimumHeight(50)
+        independent_button.setMinimumHeight(50)
+
+        dependent_button.clicked.connect(
+            lambda: self.compare_groups_question_2("Zależne")
+        )
+
+        independent_button.clicked.connect(
+            lambda: self.compare_groups_question_2("Niezależne")
+        )
+
+        layout.addWidget(title)
+        layout.addWidget(dependent_button)
+        layout.addWidget(independent_button)
+        layout.addStretch()
+
+    def compare_groups_question_2(self, dependency):
+        self.compare_dependency = dependency
 
     def show_variable_checkbox_list(self, data_type):
         if self.clean_df is None:
