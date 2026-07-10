@@ -19,6 +19,7 @@ from statsmodels.stats.contingency_tables import (
     mcnemar,
 )
 from statsmodels.stats.oneway import anova_oneway
+from scipy.stats import pearsonr, spearmanr
 
 class StatisticsEngine:
 
@@ -134,9 +135,168 @@ class StatisticsEngine:
                 variables
             )
 
+        if test_id == "pearson":
+            return self.pearson_test(
+                dataframe,
+                independent_var,
+                dependent_var
+            )
+
+        if test_id == "spearman":
+            return self.spearman_test(
+                dataframe,
+                independent_var,
+                dependent_var
+            )
+
+        if test_id == "chi_square_relationship":
+            return self.chi_square_relationship_test(
+                dataframe,
+                independent_var,
+                dependent_var
+            )
+
         raise ValueError(
             f"Nieznany identyfikator testu: {test_id}"
         )
+
+    #Pearson
+    def pearson_test(
+            self,
+            dataframe,
+            first_variable,
+            second_variable,
+    ):
+        data = dataframe[
+            [first_variable, second_variable]
+        ].copy()
+
+        data[first_variable] = pd.to_numeric(
+            data[first_variable],
+            errors="coerce"
+        )
+
+        data[second_variable] = pd.to_numeric(
+            data[second_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna()
+
+        if len(data) < 3:
+            raise ValueError(
+                "Korelacja Pearsona wymaga co najmniej "
+                "trzech kompletnych par obserwacji."
+            )
+
+        coefficient, p_value = pearsonr(
+            data[first_variable],
+            data[second_variable]
+        )
+
+        return {
+            "test": "pearson",
+            "zmienna_1": first_variable,
+            "zmienna_2": second_variable,
+            "liczba_par": int(len(data)),
+            "wspolczynnik": float(coefficient),
+            "p_value": float(p_value),
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
+        }
+
+    #Spearman
+    def spearman_test(
+            self,
+            dataframe,
+            first_variable,
+            second_variable,
+    ):
+        data = dataframe[
+            [first_variable, second_variable]
+        ].copy()
+
+        data[first_variable] = pd.to_numeric(
+            data[first_variable],
+            errors="coerce"
+        )
+
+        data[second_variable] = pd.to_numeric(
+            data[second_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna()
+
+        if len(data) < 3:
+            raise ValueError(
+                "Korelacja Spearmana wymaga co najmniej "
+                "trzech kompletnych par obserwacji."
+            )
+
+        coefficient, p_value = spearmanr(
+            data[first_variable],
+            data[second_variable]
+        )
+
+        return {
+            "test": "spearman",
+            "zmienna_1": first_variable,
+            "zmienna_2": second_variable,
+            "liczba_par": int(len(data)),
+            "wspolczynnik": float(coefficient),
+            "p_value": float(p_value),
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
+        }
+
+    #V Cramera
+    def chi_square_relationship_test(
+            self,
+            dataframe,
+            first_variable,
+            second_variable,
+    ):
+        contingency_table = pd.crosstab(
+            dataframe[first_variable],
+            dataframe[second_variable]
+        )
+
+        if contingency_table.empty:
+            raise ValueError(
+                "Nie udało się utworzyć tabeli kontyngencji."
+            )
+
+        chi2, p_value, dof, expected = chi2_contingency(
+            contingency_table
+        )
+
+        sample_size = int(contingency_table.to_numpy().sum())
+
+        min_dimension = min(
+            contingency_table.shape[0] - 1,
+            contingency_table.shape[1] - 1,
+        )
+
+        if min_dimension <= 0:
+            cramers_v = 0.0
+        else:
+            cramers_v = (
+                                chi2 / (sample_size * min_dimension)
+                        ) ** 0.5
+
+        return {
+            "test": "chi_square_relationship",
+            "zmienna_1": first_variable,
+            "zmienna_2": second_variable,
+            "chi2": float(chi2),
+            "degrees_of_freedom": int(dof),
+            "p_value": float(p_value),
+            "cramers_v": float(cramers_v),
+            "liczba_obserwacji": sample_size,
+            "interpretacja": self.interpret_p_value(p_value),
+        }
+
     #Sprawdzanie rozkładu normalnego dla wielu pomiarów
     def repeated_measures_normality_test(
             self,

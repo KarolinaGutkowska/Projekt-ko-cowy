@@ -1,6 +1,9 @@
 import sys
 from PyQt6.QtWidgets import QApplication
 from GUI.GUI import MainWindow
+import faulthandler
+
+faulthandler.enable()
 
 
 def main():

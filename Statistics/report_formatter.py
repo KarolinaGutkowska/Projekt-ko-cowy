@@ -83,6 +83,26 @@ class ReportFormatter:
                 independent_var,
                 dependent_var
             )
+        elif test_id == "pearson":
+            return self.format_pearson(
+                result,
+                independent_var,
+                dependent_var
+            )
+
+        elif test_id == "spearman":
+            return self.format_spearman(
+                result,
+                independent_var,
+                dependent_var
+            )
+
+        elif test_id == "chi_square_relationship":
+            return self.format_chi_square_relationship(
+                result,
+                independent_var,
+                dependent_var
+            )
 
 
         else:
@@ -90,6 +110,96 @@ class ReportFormatter:
                 f"Formatowanie testu „{test_id}” "
                 "zostanie dodane później."
             )
+
+    def format_pearson(
+            self,
+            result,
+            first_variable,
+            second_variable
+    ):
+        return f"""
+    ========================================
+    KORELACJA PEARSONA
+    ========================================
+
+    PIERWSZA ZMIENNA:
+    {first_variable}
+
+    DRUGA ZMIENNA:
+    {second_variable}
+
+    LICZBA PAR:
+    {result['liczba_par']}
+
+    WYNIKI:
+    r = {result['wspolczynnik']:.4f}
+    p-value = {result['p_value']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+    ========================================
+    """.strip()
+
+    def format_spearman(
+            self,
+            result,
+            first_variable,
+            second_variable
+    ):
+        return f"""
+    ========================================
+    KORELACJA SPEARMANA
+    ========================================
+
+    PIERWSZA ZMIENNA:
+    {first_variable}
+
+    DRUGA ZMIENNA:
+    {second_variable}
+
+    LICZBA PAR:
+    {result['liczba_par']}
+
+    WYNIKI:
+    rho = {result['wspolczynnik']:.4f}
+    p-value = {result['p_value']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+    ========================================
+    """.strip()
+
+    def format_chi_square_relationship(
+            self,
+            result,
+            first_variable,
+            second_variable
+    ):
+        return f"""
+    ========================================
+    TEST CHI-KWADRAT I V CRAMÉRA
+    ========================================
+
+    PIERWSZA ZMIENNA:
+    {first_variable}
+
+    DRUGA ZMIENNA:
+    {second_variable}
+
+    LICZBA OBSERWACJI:
+    {result['liczba_obserwacji']}
+
+    WYNIKI:
+    χ² = {result['chi2']:.4f}
+    df = {result['degrees_of_freedom']}
+    p-value = {result['p_value']:.4f}
+    V Craméra = {result['cramers_v']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+    ========================================
+    """.strip()
+
 
     def format_chi_square(
         self,

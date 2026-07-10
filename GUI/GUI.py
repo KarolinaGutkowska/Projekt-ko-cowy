@@ -197,13 +197,662 @@ class MainWindow(QWidget):
         )
 
         more_variables_button.clicked.connect(
-            self.show_advanced_relationship_question
+            self.show_advanced_relationship_not_ready
         )
 
         layout.addWidget(title)
         layout.addWidget(two_variables_button)
         layout.addWidget(more_variables_button)
         layout.addStretch()
+
+    def show_mixed_relationship_question(self, mixed_type):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Wybierz zmienne")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        self.mixed_relationship_type = mixed_type
+
+        self.mixed_nominal_combo = QComboBox()
+        self.mixed_second_combo = QComboBox()
+
+        numeric_columns, categorical_columns = (
+            self.get_numeric_and_categorical_columns()
+        )
+
+        self.mixed_nominal_combo.addItems(categorical_columns)
+
+        if mixed_type == "nominal_quantitative":
+            self.mixed_second_combo.addItems(numeric_columns)
+            second_label = "Zmienna ilościowa:"
+        elif mixed_type == "nominal_ordinal":
+            self.mixed_second_combo.addItems(numeric_columns)
+            second_label = "Zmienna porządkowa:"
+        else:
+            QMessageBox.warning(
+                self,
+                "Błąd",
+                "Nieznany typ analizy mieszanej."
+            )
+            return
+
+        calculate_button = QPushButton(
+            "Dobierz odpowiedni test"
+        )
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            self.calculate_mixed_relationship_test
+        )
+
+        back_button = QPushButton("Wstecz")
+        back_button.clicked.connect(
+            lambda: self.show_relationship_variable_types_question(2)
+        )
+
+        layout.addWidget(title)
+        layout.addWidget(QLabel("Zmienna nominalna / grupująca:"))
+        layout.addWidget(self.mixed_nominal_combo)
+        layout.addWidget(QLabel(second_label))
+        layout.addWidget(self.mixed_second_combo)
+        layout.addWidget(calculate_button)
+        layout.addWidget(back_button)
+        layout.addStretch()
+
+    def calculate_mixed_relationship_test(self):
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
+
+            grouping_var = self.mixed_nominal_combo.currentText()
+            dependent_var = self.mixed_second_combo.currentText()
+
+            if not grouping_var or not dependent_var:
+                QMessageBox.warning(
+                    self,
+                    "Brak wyboru",
+                    "Wybierz obie zmienne."
+                )
+                return
+
+            groups_count = (
+                self.clean_df[grouping_var]
+                .dropna()
+                .nunique()
+            )
+
+            if groups_count < 2:
+                QMessageBox.warning(
+                    self,
+                    "Za mało grup",
+                    "Zmienna nominalna musi zawierać co najmniej dwie grupy."
+                )
+                return
+
+            if self.mixed_relationship_type == "nominal_ordinal":
+                if groups_count == 2:
+                    test_id = "mann_whitney"
+                    display_name = "Test U Manna-Whitneya"
+                else:
+                    test_id = "kruskal_wallis"
+                    display_name = "Test Kruskala-Wallisa"
+
+                self.show_recommended_test(
+                    test_id=test_id,
+                    display_name=display_name,
+                    selected_independent_var=grouping_var,
+                    selected_dependent_var=dependent_var,
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+
+            normality_result = stats_engine.normality_test_by_groups(
+                self.clean_df,
+                grouping_var,
+                dependent_var,
+            )
+
+            if not normality_result["all_groups_normal"]:
+                if groups_count == 2:
+                    test_id = "mann_whitney"
+                    display_name = "Test U Manna-Whitneya"
+                else:
+                    test_id = "kruskal_wallis"
+                    display_name = "Test Kruskala-Wallisa"
+
+            else:
+                variance_result = stats_engine.levene_test(
+                    self.clean_df,
+                    grouping_var,
+                    dependent_var,
+                )
+
+                if groups_count == 2:
+                    if variance_result["equal_variances"]:
+                        test_id = "t_independent"
+                        display_name = (
+                            "Test t-Studenta dla prób niezależnych"
+                        )
+                    else:
+                        test_id = "welch_t"
+                        display_name = (
+                            "Test t Welcha dla prób niezależnych"
+                        )
+                else:
+                    if variance_result["equal_variances"]:
+                        test_id = "anova"
+                        display_name = "Jednoczynnikowa ANOVA"
+                    else:
+                        test_id = "welch_anova"
+                        display_name = "Jednoczynnikowa ANOVA Welcha"
+
+            information_text = self.build_mixed_relationship_information(
+                grouping_var=grouping_var,
+                dependent_var=dependent_var,
+                groups_count=groups_count,
+                normality_result=normality_result,
+                variance_result=(
+                    variance_result
+                    if normality_result["all_groups_normal"]
+                    else None
+                ),
+                display_name=display_name,
+            )
+
+            self.show_recommended_test(
+                test_id=test_id,
+                display_name=display_name,
+                selected_independent_var=grouping_var,
+                selected_dependent_var=dependent_var,
+                information_text=information_text,
+            )
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd doboru testu",
+                str(error)
+            )
+
+    def build_mixed_relationship_information(
+            self,
+            grouping_var,
+            dependent_var,
+            groups_count,
+            normality_result,
+            variance_result,
+            display_name,
+    ):
+        lines = [
+            "=== DOBÓR TESTU DLA ZMIENNYCH MIESZANYCH ===",
+            "",
+            f"Zmienna nominalna: {grouping_var}",
+            f"Zmienna ilościowa: {dependent_var}",
+            f"Liczba grup: {groups_count}",
+            "",
+            "TESTY NORMALNOŚCI:",
+        ]
+
+        for group_name, group_result in normality_result["groups"].items():
+            lines.append("")
+            lines.append(f"Grupa: {group_name}")
+            lines.append(
+                f"Liczebność: {group_result['sample_size']}"
+            )
+
+            if group_result["p_value"] is None:
+                lines.append(
+                    "Nie udało się ocenić normalności."
+                )
+            else:
+                lines.append(
+                    f"W = {group_result['statistic']:.4f}"
+                )
+                lines.append(
+                    f"p-value = {group_result['p_value']:.4f}"
+                )
+
+        if variance_result is not None:
+            lines.extend([
+                "",
+                "TEST LEVENE’A:",
+                f"Statystyka = {variance_result['statistic']:.4f}",
+                f"p-value = {variance_result['p_value']:.4f}",
+            ])
+
+        lines.extend([
+            "",
+            f"Rekomendowany test: {display_name}",
+        ])
+
+        return "\n".join(lines)
+
+    def show_advanced_relationship_not_ready(self):
+        QMessageBox.information(
+            self,
+            "W budowie",
+            "Analizy dla więcej niż dwóch zmiennych "
+            "zostaną dodane w kolejnym etapie."
+        )
+
+
+    def show_relationship_variable_types_question(self, variables_count):
+        self.relationship_variables_count = variables_count
+
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Jakie masz zmienne?")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        both_quantitative_button = QPushButton(
+            "Obie ilościowe"
+        )
+
+        both_ordinal_button = QPushButton(
+            "Obie porządkowe"
+        )
+
+        both_nominal_button = QPushButton(
+            "Obie nominalne"
+        )
+
+        ordinal_quantitative_button = QPushButton(
+            "Porządkowa i ilościowa"
+        )
+
+        nominal_quantitative_button = QPushButton(
+            "Nominalna i ilościowa"
+        )
+
+        nominal_ordinal_button = QPushButton(
+            "Nominalna i porządkowa"
+        )
+
+        buttons = [
+            both_quantitative_button,
+            both_ordinal_button,
+            both_nominal_button,
+            ordinal_quantitative_button,
+            nominal_quantitative_button,
+            nominal_ordinal_button,
+        ]
+
+        for button in buttons:
+            button.setMinimumHeight(48)
+
+        both_quantitative_button.clicked.connect(
+            self.show_quantitative_relationship_normality
+        )
+
+        both_ordinal_button.clicked.connect(
+            lambda: self.show_relationship_test(
+                test_id="spearman",
+                display_name="Współczynnik korelacji Spearmana",
+                variable_type="numeric",
+            )
+        )
+
+        both_nominal_button.clicked.connect(
+            lambda: self.show_relationship_test(
+                test_id="chi_square_relationship",
+                display_name=(
+                    "Test Chi-kwadrat niezależności "
+                    "z V Craméra"
+                ),
+                variable_type="categorical",
+            )
+        )
+
+        ordinal_quantitative_button.clicked.connect(
+            lambda: self.show_relationship_test(
+                test_id="spearman",
+                display_name="Współczynnik korelacji Spearmana",
+                variable_type="numeric",
+            )
+        )
+
+        nominal_quantitative_button.clicked.connect(
+            lambda: self.show_mixed_relationship_question(
+                mixed_type="nominal_quantitative"
+            )
+        )
+
+        nominal_ordinal_button.clicked.connect(
+            lambda: self.show_mixed_relationship_question(
+                mixed_type="nominal_ordinal"
+            )
+        )
+
+        layout.addWidget(title)
+
+        for button in buttons:
+            layout.addWidget(button)
+
+        layout.addStretch()
+
+    def show_quantitative_relationship_normality(self):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Sprawdzenie normalności rozkładów")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        description = QLabel(
+            "Wybierz dwie zmienne ilościowe. "
+            "Program sprawdzi normalność obu zmiennych "
+            "i automatycznie wybierze korelację Pearsona "
+            "albo Spearmana."
+        )
+        description.setWordWrap(True)
+
+        self.relationship_first_combo = QComboBox()
+        self.relationship_second_combo = QComboBox()
+
+        numeric_columns, _ = (
+            self.get_numeric_and_categorical_columns()
+        )
+
+        self.relationship_first_combo.addItems(numeric_columns)
+        self.relationship_second_combo.addItems(numeric_columns)
+
+        if self.relationship_second_combo.count() > 1:
+            self.relationship_second_combo.setCurrentIndex(1)
+
+        calculate_button = QPushButton(
+            "Sprawdź normalność i dobierz test"
+        )
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            self.calculate_relationship_normality
+        )
+
+        back_button = QPushButton("Wstecz")
+        back_button.clicked.connect(
+            lambda: self.show_relationship_variable_types_question(2)
+        )
+
+        layout.addWidget(title)
+        layout.addWidget(description)
+
+        layout.addWidget(QLabel("Pierwsza zmienna:"))
+        layout.addWidget(self.relationship_first_combo)
+
+        layout.addWidget(QLabel("Druga zmienna:"))
+        layout.addWidget(self.relationship_second_combo)
+
+        layout.addWidget(calculate_button)
+        layout.addWidget(back_button)
+        layout.addStretch()
+
+    def calculate_relationship_normality(self):
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
+
+            first_variable = (
+                self.relationship_first_combo.currentText()
+            )
+            second_variable = (
+                self.relationship_second_combo.currentText()
+            )
+
+            if not first_variable or not second_variable:
+                QMessageBox.warning(
+                    self,
+                    "Brak zmiennych",
+                    "Wybierz dwie zmienne."
+                )
+                return
+
+            if first_variable == second_variable:
+                QMessageBox.warning(
+                    self,
+                    "Nieprawidłowy wybór",
+                    "Wybierz dwie różne zmienne."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+
+            first_result = stats_engine.normality_test(
+                self.clean_df,
+                first_variable
+            )
+
+            second_result = stats_engine.normality_test(
+                self.clean_df,
+                second_variable
+            )
+
+            if first_result is None or second_result is None:
+                raise ValueError(
+                    "Nie udało się sprawdzić normalności."
+                )
+
+            both_normal = (
+                    first_result["rozkład_normalny"]
+                    and second_result["rozkład_normalny"]
+            )
+
+            if both_normal:
+                test_id = "pearson"
+                display_name = (
+                    "Współczynnik korelacji Pearsona"
+                )
+            else:
+                test_id = "spearman"
+                display_name = (
+                    "Współczynnik korelacji Spearmana"
+                )
+
+            information_text = (
+                "=== TESTY NORMALNOŚCI ===\n\n"
+                f"{first_variable}:\n"
+                f"W = {first_result['statystyka_W']:.4f}\n"
+                f"p-value = {first_result['p_value']:.4f}\n\n"
+                f"{second_variable}:\n"
+                f"W = {second_result['statystyka_W']:.4f}\n"
+                f"p-value = {second_result['p_value']:.4f}\n\n"
+                f"Rekomendowany test: {display_name}"
+            )
+
+            self.show_relationship_test(
+                test_id=test_id,
+                display_name=display_name,
+                variable_type="numeric",
+                selected_first_variable=first_variable,
+                selected_second_variable=second_variable,
+                information_text=information_text,
+            )
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd doboru testu",
+                str(error)
+            )
+
+    def show_relationship_test(
+            self,
+            test_id,
+            display_name,
+            variable_type,
+            selected_first_variable=None,
+            selected_second_variable=None,
+            information_text=None,
+    ):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Rekomendowany test:")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        test_label = QLabel(display_name)
+        test_label.setStyleSheet("""
+            font-size: 20px;
+            padding: 10px;
+        """)
+        test_label.setWordWrap(True)
+
+        self.relationship_test_first_combo = QComboBox()
+        self.relationship_test_second_combo = QComboBox()
+
+        numeric_columns, categorical_columns = (
+            self.get_numeric_and_categorical_columns()
+        )
+
+        if variable_type == "numeric":
+            columns = numeric_columns
+        else:
+            columns = categorical_columns
+
+        self.relationship_test_first_combo.addItems(columns)
+        self.relationship_test_second_combo.addItems(columns)
+
+        if self.relationship_test_second_combo.count() > 1:
+            self.relationship_test_second_combo.setCurrentIndex(1)
+
+        if selected_first_variable:
+            index = self.relationship_test_first_combo.findText(
+                selected_first_variable
+            )
+
+            if index >= 0:
+                self.relationship_test_first_combo.setCurrentIndex(index)
+
+        if selected_second_variable:
+            index = self.relationship_test_second_combo.findText(
+                selected_second_variable
+            )
+
+            if index >= 0:
+                self.relationship_test_second_combo.setCurrentIndex(index)
+
+        calculate_button = QPushButton("Oblicz statystyki")
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            lambda: self.calculate_relationship_test(
+                test_id,
+                display_name
+            )
+        )
+
+        add_to_report_button = QPushButton("Dodaj do raportu")
+        add_to_report_button.clicked.connect(
+            self.add_current_results_to_report
+        )
+
+        self.recommended_test_output = QTextEdit()
+        self.recommended_test_output.setReadOnly(True)
+
+        layout.addWidget(title)
+        layout.addWidget(test_label)
+
+        if information_text:
+            information_output = QTextEdit()
+            information_output.setReadOnly(True)
+            information_output.setMaximumHeight(240)
+            information_output.setText(information_text)
+            layout.addWidget(information_output)
+
+        layout.addWidget(QLabel("Pierwsza zmienna:"))
+        layout.addWidget(self.relationship_test_first_combo)
+
+        layout.addWidget(QLabel("Druga zmienna:"))
+        layout.addWidget(self.relationship_test_second_combo)
+
+        layout.addWidget(calculate_button)
+        layout.addWidget(add_to_report_button)
+        layout.addWidget(QLabel("Wyniki:"))
+        layout.addWidget(self.recommended_test_output)
+        layout.addStretch()
+
+    def calculate_relationship_test(
+            self,
+            test_id,
+            display_name,
+    ):
+        try:
+            first_variable = (
+                self.relationship_test_first_combo.currentText()
+            )
+
+            second_variable = (
+                self.relationship_test_second_combo.currentText()
+            )
+
+            if not first_variable or not second_variable:
+                QMessageBox.warning(
+                    self,
+                    "Brak zmiennych",
+                    "Wybierz dwie zmienne."
+                )
+                return
+
+            if first_variable == second_variable:
+                QMessageBox.warning(
+                    self,
+                    "Nieprawidłowy wybór",
+                    "Wybierz dwie różne zmienne."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+            formatter = ReportFormatter()
+
+            result = stats_engine.run_test(
+                test_id,
+                self.clean_df,
+                first_variable,
+                second_variable,
+            )
+
+            text = formatter.format(
+                test_id,
+                result,
+                first_variable,
+                second_variable,
+            )
+
+            self.current_analysis_result = text
+            self.current_analysis_name = display_name
+
+            self.recommended_test_output.setText(text)
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd obliczeń",
+                str(error)
+            )
 
     def show_descriptive_data_type_question(self):
 
@@ -672,7 +1321,14 @@ class MainWindow(QWidget):
 
         return numeric_columns, categorical_columns
 
-    def show_recommended_test(self, test_id, display_name):
+    def show_recommended_test(
+            self,
+            test_id,
+            display_name,
+            selected_independent_var=None,
+            selected_dependent_var=None,
+            information_text=None,
+    ):
         self.clear_analysis_page()
         layout = self.analysis_page.layout()
 
