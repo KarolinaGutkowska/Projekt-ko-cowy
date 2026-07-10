@@ -158,7 +158,9 @@ class MainWindow(QWidget):
             self.show_compare_groups_question_1
         )
         self.relationship_button = QPushButton("Badanie związku między grupami")
-
+        self.relationship_button.clicked.connect(
+            self.show_relationship_variables_count_question
+        )
         self.descriptive_button.setMinimumHeight(50)
         self.compare_groups_button.setMinimumHeight(50)
         self.relationship_button.setMinimumHeight(50)
@@ -172,6 +174,36 @@ class MainWindow(QWidget):
         layout.addStretch()
 
         self.analysis_page.setLayout(layout)
+
+    def show_relationship_variables_count_question(self):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Ile zmiennych chcesz analizować?")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        two_variables_button = QPushButton("Tylko 2")
+        more_variables_button = QPushButton("Więcej niż 2")
+
+        two_variables_button.setMinimumHeight(50)
+        more_variables_button.setMinimumHeight(50)
+
+        two_variables_button.clicked.connect(
+            lambda: self.show_relationship_variable_types_question(2)
+        )
+
+        more_variables_button.clicked.connect(
+            self.show_advanced_relationship_question
+        )
+
+        layout.addWidget(title)
+        layout.addWidget(two_variables_button)
+        layout.addWidget(more_variables_button)
+        layout.addStretch()
 
     def show_descriptive_data_type_question(self):
 
@@ -313,14 +345,22 @@ class MainWindow(QWidget):
     def compare_groups_question_4(self, variable_type):
         self.compare_variable_type = variable_type
 
+        # =========================================
+        # PRÓBY ZALEŻNE
+        # =========================================
         if self.compare_dependency == "dependent":
             test_id = self.test_selector.select_dependent_test(
                 groups_count=self.compare_groups_count,
                 dependent_type=self.compare_variable_type,
             )
 
+            # Dla danych ilościowych trzeba najpierw sprawdzić normalność.
             if test_id == "dependent_normality_required":
-                self.show_dependent_quantitative_normality()
+                if self.compare_groups_count == 2:
+                    self.show_dependent_quantitative_normality()
+                else:
+                    self.show_multiple_dependent_quantitative_normality()
+
                 return
 
             display_names = {
@@ -328,6 +368,10 @@ class MainWindow(QWidget):
                 "wilcoxon": "Test Wilcoxona",
                 "cochran_q": "Test Q Cochrana",
                 "friedman": "Test Friedmana",
+                "t_paired": "Test t-Studenta dla prób zależnych",
+                "repeated_measures_anova": (
+                    "ANOVA z powtarzanymi pomiarami"
+                ),
             }
 
             display_name = display_names.get(test_id)
@@ -340,11 +384,14 @@ class MainWindow(QWidget):
                 )
                 return
 
+            # Dwa pomiary zależne.
             if self.compare_groups_count == 2:
                 self.show_dependent_test(
                     test_id,
                     display_name
                 )
+
+            # Więcej niż dwa pomiary zależne.
             else:
                 self.show_multiple_dependent_test(
                     test_id,
@@ -353,42 +400,58 @@ class MainWindow(QWidget):
 
             return
 
-        if self.compare_dependency != "independent":
-            QMessageBox.warning(
-                self,
-                "Błąd wyboru",
-                "Nie udało się rozpoznać charakteru grup."
+        # =========================================
+        # PRÓBY NIEZALEŻNE
+        # =========================================
+        if self.compare_dependency == "independent":
+            test_id = self.test_selector.select_independent_test(
+                groups_count=self.compare_groups_count,
+                dependent_type=self.compare_variable_type,
+            )
+
+            # Dla danych ilościowych trzeba najpierw sprawdzić
+            # normalność i jednorodność wariancji.
+            if test_id == "normality_required":
+                self.show_independent_quantitative_normality()
+                return
+
+            display_names = {
+                "chi_square": "Test Chi-kwadrat niezależności",
+                "mann_whitney": "Test U Manna-Whitneya",
+                "kruskal_wallis": "Test Kruskala-Wallisa",
+                "t_independent": (
+                    "Test t-Studenta dla prób niezależnych"
+                ),
+                "welch_t": (
+                    "Test t Welcha dla prób niezależnych"
+                ),
+                "anova": "Jednoczynnikowa ANOVA",
+                "welch_anova": "Jednoczynnikowa ANOVA Welcha",
+            }
+
+            display_name = display_names.get(test_id)
+
+            if display_name is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak testu",
+                    f"Nie znaleziono nazwy dla testu: {test_id}"
+                )
+                return
+
+            self.show_recommended_test(
+                test_id,
+                display_name
             )
             return
 
-        test_id = self.test_selector.select_independent_test(
-            groups_count=self.compare_groups_count,
-            dependent_type=self.compare_variable_type,
-        )
-
-        if test_id == "normality_required":
-            self.show_independent_quantitative_normality()
-            return
-
-        display_names = {
-            "chi_square": "Test Chi-kwadrat niezależności",
-            "mann_whitney": "Test U Manna-Whitneya",
-            "kruskal_wallis": "Test Kruskala-Wallisa",
-        }
-
-        display_name = display_names.get(test_id)
-
-        if display_name is None:
-            QMessageBox.warning(
-                self,
-                "Brak testu",
-                f"Nie znaleziono nazwy dla testu: {test_id}"
-            )
-            return
-
-        self.show_recommended_test(
-            test_id,
-            display_name
+        # =========================================
+        # NIEPRAWIDŁOWY STAN KREATORA
+        # =========================================
+        QMessageBox.warning(
+            self,
+            "Błąd wyboru",
+            "Nie udało się rozpoznać charakteru grup."
         )
 
     def show_independent_quantitative_normality(self):
@@ -1103,6 +1166,8 @@ class MainWindow(QWidget):
             self,
             test_id,
             display_name,
+            selected_variables=None,
+            information_text=None,
     ):
         self.clear_analysis_page()
         layout = self.analysis_page.layout()
@@ -1139,12 +1204,15 @@ class MainWindow(QWidget):
             self.get_numeric_and_categorical_columns()
         )
 
+        # Test Q Cochrana wymaga kolumn binarnych.
         if test_id == "cochran_q":
             columns = [
                 column
                 for column in self.clean_df.columns
                 if self.clean_df[column].dropna().nunique() == 2
             ]
+
+        # Friedman i ANOVA RM korzystają z kolumn liczbowych.
         else:
             columns = numeric_columns
 
@@ -1152,6 +1220,15 @@ class MainWindow(QWidget):
             checkbox = QCheckBox(str(column))
             self.multiple_dependent_checkboxes.append(checkbox)
             checkbox_layout.addWidget(checkbox)
+
+        # Ponownie zaznacza zmienne wybrane na ekranie normalności.
+        if selected_variables:
+            selected_set = set(selected_variables)
+
+            for checkbox in self.multiple_dependent_checkboxes:
+                checkbox.setChecked(
+                    checkbox.text() in selected_set
+                )
 
         checkbox_layout.addStretch()
         scroll_content.setLayout(checkbox_layout)
@@ -1183,6 +1260,14 @@ class MainWindow(QWidget):
 
         layout.addWidget(title)
         layout.addWidget(test_label)
+
+        if information_text:
+            information_output = QTextEdit()
+            information_output.setReadOnly(True)
+            information_output.setMaximumHeight(240)
+            information_output.setText(information_text)
+            layout.addWidget(information_output)
+
         layout.addWidget(instruction)
         layout.addWidget(scroll_area)
         layout.addWidget(calculate_button)
@@ -1191,7 +1276,6 @@ class MainWindow(QWidget):
         layout.addWidget(self.recommended_test_output)
         layout.addWidget(back_button)
         layout.addStretch()
-
 
     def calculate_multiple_dependent_test(
             self,
@@ -1425,6 +1509,158 @@ class MainWindow(QWidget):
         layout.addWidget(self.reports_output)
 
         self.reports_page.setLayout(layout)
+
+    def show_multiple_dependent_quantitative_normality(self):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Sprawdzenie założeń analizy")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        description = QLabel(
+            "Wybierz co najmniej trzy pomiary ilościowe. "
+            "Program sprawdzi normalność reszt i automatycznie "
+            "wybierze ANOVA z powtarzanymi pomiarami albo "
+            "test Friedmana."
+        )
+        description.setWordWrap(True)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+
+        scroll_content = QWidget()
+        checkbox_layout = QVBoxLayout()
+
+        self.multiple_normality_checkboxes = []
+
+        numeric_columns, _ = (
+            self.get_numeric_and_categorical_columns()
+        )
+
+        for column in numeric_columns:
+            checkbox = QCheckBox(str(column))
+            self.multiple_normality_checkboxes.append(checkbox)
+            checkbox_layout.addWidget(checkbox)
+
+        checkbox_layout.addStretch()
+        scroll_content.setLayout(checkbox_layout)
+        scroll_area.setWidget(scroll_content)
+
+        calculate_button = QPushButton(
+            "Sprawdź normalność i dobierz test"
+        )
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            self.calculate_multiple_dependent_normality
+        )
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(
+            lambda: self.compare_groups_question_3(
+                self.compare_groups_count
+            )
+        )
+
+        layout.addWidget(title)
+        layout.addWidget(description)
+        layout.addWidget(scroll_area)
+        layout.addWidget(calculate_button)
+        layout.addWidget(back_button)
+        layout.addStretch()
+
+    def calculate_multiple_dependent_normality(self):
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
+
+            selected_variables = [
+                checkbox.text()
+                for checkbox in self.multiple_normality_checkboxes
+                if checkbox.isChecked()
+            ]
+
+            if len(selected_variables) < 3:
+                QMessageBox.warning(
+                    self,
+                    "Za mało pomiarów",
+                    "Wybierz co najmniej trzy pomiary."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+
+            normality_result = (
+                stats_engine.repeated_measures_normality_test(
+                    self.clean_df,
+                    selected_variables,
+                )
+            )
+
+            test_id = self.test_selector.select_dependent_test(
+                groups_count=3,
+                dependent_type="quantitative",
+                normal=normality_result["is_normal"],
+            )
+
+            display_names = {
+                "repeated_measures_anova": (
+                    "ANOVA z powtarzanymi pomiarami"
+                ),
+                "friedman": "Test Friedmana",
+            }
+
+            display_name = display_names.get(test_id)
+
+            if display_name is None:
+                raise ValueError(
+                    f"Nie znaleziono nazwy testu: {test_id}"
+                )
+
+            normality_text = (
+                "=== TEST NORMALNOŚCI RESZT ===\n\n"
+                f"Pomiary: {', '.join(selected_variables)}\n"
+                f"Liczba pomiarów: "
+                f"{normality_result['liczba_pomiarow']}\n"
+                f"Liczba kompletnych przypadków: "
+                f"{normality_result['liczba_kompletnych_przypadkow']}\n\n"
+                f"W = {normality_result['statystyka_W']:.4f}\n"
+                f"p-value = {normality_result['p_value']:.4f}\n\n"
+            )
+
+            if normality_result["is_normal"]:
+                normality_text += (
+                    "Reszty mają rozkład zgodny z normalnym.\n"
+                    "Wybrano ANOVA z powtarzanymi pomiarami."
+                )
+            else:
+                normality_text += (
+                    "Reszty odbiegają od rozkładu normalnego.\n"
+                    "Wybrano test Friedmana."
+                )
+
+            self.show_multiple_dependent_test(
+                test_id=test_id,
+                display_name=display_name,
+                selected_variables=selected_variables,
+                information_text=normality_text,
+            )
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd doboru testu",
+                str(error)
+            )
 
     def add_current_results_to_report(self):
         try:

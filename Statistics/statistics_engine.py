@@ -128,9 +128,99 @@ class StatisticsEngine:
                 variables
             )
 
+        if test_id == "repeated_measures_anova":
+            return self.repeated_measures_anova_test(
+                dataframe,
+                variables
+            )
+
         raise ValueError(
             f"Nieznany identyfikator testu: {test_id}"
         )
+    #Sprawdzanie rozkładu normalnego dla wielu pomiarów
+    def repeated_measures_normality_test(
+            self,
+            dataframe,
+            variables,
+    ):
+        if not isinstance(variables, (list, tuple)):
+            raise TypeError(
+                "Pomiary muszą zostać przekazane jako lista lub krotka."
+            )
+
+        if len(variables) < 3:
+            raise ValueError(
+                "Analiza wymaga co najmniej trzech pomiarów."
+            )
+
+        missing_columns = [
+            variable
+            for variable in variables
+            if variable not in dataframe.columns
+        ]
+
+        if missing_columns:
+            raise ValueError(
+                "Nie znaleziono kolumn: "
+                + ", ".join(missing_columns)
+            )
+
+        data = dataframe[list(variables)].copy()
+
+        for variable in variables:
+            data[variable] = pd.to_numeric(
+                data[variable],
+                errors="coerce"
+            )
+
+        data = data.dropna()
+
+        if len(data) < 3:
+            raise ValueError(
+                "Test normalności wymaga co najmniej trzech "
+                "kompletnych zestawów obserwacji."
+            )
+
+        values = data.to_numpy(dtype=float)
+
+        grand_mean = values.mean()
+        subject_means = values.mean(axis=1, keepdims=True)
+        measurement_means = values.mean(axis=0, keepdims=True)
+
+        residuals = (
+                values
+                - subject_means
+                - measurement_means
+                + grand_mean
+        ).ravel()
+
+        if len(set(residuals)) < 2:
+            raise ValueError(
+                "Nie można sprawdzić normalności, ponieważ "
+                "wszystkie reszty mają taką samą wartość."
+            )
+
+        statistic, p_value = shapiro(residuals)
+
+        result = {
+            "test_id": "repeated_measures_normality",
+            "test": "Shapiro-Wilk",
+            "pomiary": list(variables),
+            "liczba_pomiarow": int(len(variables)),
+            "liczba_kompletnych_przypadkow": int(len(data)),
+            "statystyka_W": float(statistic),
+            "p_value": float(p_value),
+            "is_normal": bool(p_value >= 0.05),
+            "alpha": 0.05,
+        }
+
+        self.report.append(
+            "Wykonano test normalności reszt dla pomiarów: "
+            + ", ".join(variables)
+            + "."
+        )
+
+        return result
 
     def normality_test_by_groups(
             self,
@@ -296,6 +386,130 @@ class StatisticsEngine:
 
         self.report.append(
             "Wykonano test Q Cochrana dla pomiarów: "
+            + ", ".join(variables)
+            + "."
+        )
+
+        return result
+
+    #ANOVA z powtarzanymi pomiarami
+    def repeated_measures_anova_test(
+            self,
+            dataframe,
+            variables,
+    ):
+        if not isinstance(variables, (list, tuple)):
+            raise TypeError(
+                "Pomiary muszą zostać przekazane jako lista lub krotka."
+            )
+
+        if len(variables) < 3:
+            raise ValueError(
+                "ANOVA z powtarzanymi pomiarami wymaga "
+                "co najmniej trzech pomiarów."
+            )
+
+        missing_columns = [
+            variable
+            for variable in variables
+            if variable not in dataframe.columns
+        ]
+
+        if missing_columns:
+            raise ValueError(
+                "Nie znaleziono kolumn: "
+                + ", ".join(missing_columns)
+            )
+
+        data = dataframe[list(variables)].copy()
+
+        for variable in variables:
+            data[variable] = pd.to_numeric(
+                data[variable],
+                errors="coerce"
+            )
+
+        data = data.dropna()
+
+        if len(data) < 3:
+            raise ValueError(
+                "ANOVA z powtarzanymi pomiarami wymaga "
+                "co najmniej trzech kompletnych przypadków."
+            )
+
+        sphericity_result = pg.sphericity(
+            data,
+            method="mauchly"
+        )
+
+        sphericity_met = bool(sphericity_result.spher)
+        mauchly_w = float(sphericity_result.W)
+        mauchly_chi2 = float(sphericity_result.chi2)
+        mauchly_dof = int(sphericity_result.dof)
+        mauchly_p = float(sphericity_result.pval)
+
+        anova_table = pg.rm_anova(
+            data=data,
+            correction=True,
+            detailed=False,
+            effsize="ng2",
+        )
+
+        anova_row = anova_table.iloc[0]
+
+        statistic_f = float(anova_row["F"])
+        p_uncorrected = float(anova_row["p_unc"])
+        df_1 = float(anova_row["ddof1"])
+        df_2 = float(anova_row["ddof2"])
+        epsilon = float(anova_row["eps"])
+        effect_size = float(anova_row["ng2"])
+
+        corrected_value = anova_row.get(
+            "p_GG_corr",
+            p_uncorrected
+        )
+
+        if pd.isna(corrected_value):
+            p_corrected = p_uncorrected
+        else:
+            p_corrected = float(corrected_value)
+
+        if sphericity_met:
+            p_value_used = p_uncorrected
+            correction_used = False
+        else:
+            p_value_used = p_corrected
+            correction_used = True
+
+        result = {
+            "test": "repeated_measures_anova",
+            "pomiary": list(variables),
+            "liczba_pomiarow": int(len(variables)),
+            "liczba_kompletnych_przypadkow": int(len(data)),
+            "statystyka_F": statistic_f,
+            "df_1": df_1,
+            "df_2": df_2,
+            "p_value": float(p_value_used),
+            "p_uncorrected": p_uncorrected,
+            "p_greenhouse_geisser": p_corrected,
+            "greenhouse_geisser_epsilon": epsilon,
+            "sphericity_met": sphericity_met,
+            "mauchly_W": mauchly_w,
+            "mauchly_chi2": mauchly_chi2,
+            "mauchly_df": mauchly_dof,
+            "mauchly_p_value": mauchly_p,
+            "correction_used": correction_used,
+            "effect_size_ng2": effect_size,
+            "istotne_statystycznie": bool(
+                p_value_used < 0.05
+            ),
+            "interpretacja": self.interpret_p_value(
+                p_value_used
+            ),
+        }
+
+        self.report.append(
+            "Wykonano ANOVA z powtarzanymi pomiarami dla: "
             + ", ".join(variables)
             + "."
         )
