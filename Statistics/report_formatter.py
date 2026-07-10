@@ -109,12 +109,98 @@ class ReportFormatter:
                 independent_var,
                 dependent_var
             )
+        elif test_id == "logistic_regression":
+            return self.format_logistic_regression(
+                result,
+                independent_var,
+                dependent_var
+            )
 
         else:
             return (
                 f"Formatowanie testu „{test_id}” "
                 "zostanie dodane później."
             )
+
+    def format_logistic_regression(
+            self,
+            result,
+            independent_var=None,
+            dependent_var=None,
+    ):
+        predictors = "\n".join(
+            f"- {variable}"
+            for variable in result["zmienne_niezalezne"]
+        )
+
+        coefficient_sections = []
+
+        for coefficient in result["wspolczynniki"]:
+            coefficient_sections.append(
+                f"""
+    Zmienna:
+    {coefficient['zmienna']}
+
+    B = {coefficient['wspolczynnik']:.4f}
+    SE = {coefficient['blad_standardowy']:.4f}
+    z = {coefficient['statystyka_z']:.4f}
+    p-value = {coefficient['p_value']:.4f}
+
+    Iloraz szans:
+    OR = {coefficient['odds_ratio']:.4f}
+
+    95% CI dla OR:
+    [
+    {coefficient['or_ci_95_lower']:.4f},
+    {coefficient['or_ci_95_upper']:.4f}
+    ]
+    """.strip()
+            )
+
+        coefficients_text = "\n\n".join(
+            coefficient_sections
+        )
+
+        return f"""
+    ========================================
+    BINARNA REGRESJA LOGISTYCZNA
+    ========================================
+
+    ZMIENNA ZALEŻNA:
+    {result['zmienna_zalezna']}
+
+    KODOWANIE WYNIKU:
+    0 = {result['kategoria_0']}
+    1 = {result['kategoria_1']}
+
+    ZMIENNE NIEZALEŻNE:
+    {predictors}
+
+    LICZBA OBSERWACJI:
+    {result['liczba_obserwacji']}
+
+    DOPASOWANIE MODELU:
+    Pseudo-R² McFaddena =
+    {result['pseudo_r_squared_mcfadden']:.4f}
+
+    TEST ILORAZU WIARYGODNOŚCI:
+    χ² = {result['likelihood_ratio_statistic']:.4f}
+    p-value = {result['p_value_modelu']:.4f}
+
+    KRYTERIA INFORMACYJNE:
+    AIC = {result['aic']:.4f}
+    BIC = {result['bic']:.4f}
+
+    TRAFNOŚĆ PRZY PROGU 0,5:
+    {result['accuracy_threshold_05'] * 100:.2f}%
+
+    WSPÓŁCZYNNIKI:
+    {coefficients_text}
+
+    INTERPRETACJA CAŁEGO MODELU:
+    {result['interpretacja']}
+    ========================================
+    """.strip()
 
     def format_linear_regression(
             self,

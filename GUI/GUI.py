@@ -252,9 +252,7 @@ class MainWindow(QWidget):
         )
 
         logistic_regression_button.clicked.connect(
-            lambda: self.show_analysis_not_ready(
-                "Regresja logistyczna"
-            )
+            self.show_logistic_regression_variables
         )
 
         mediation_button.clicked.connect(
@@ -291,6 +289,184 @@ class MainWindow(QWidget):
             f"{analysis_name} zostanie dodana "
             "w następnym etapie."
         )
+
+    def show_logistic_regression_variables(self):
+        if self.clean_df is None:
+            QMessageBox.warning(
+                self,
+                "Brak danych",
+                "Najpierw wczytaj plik."
+            )
+            return
+
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Regresja logistyczna")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        description = QLabel(
+            "Wybierz binarną zmienną zależną, czyli kolumnę "
+            "zawierającą dokładnie dwie kategorie, oraz co najmniej "
+            "dwie ilościowe zmienne niezależne."
+        )
+        description.setWordWrap(True)
+
+        # Kolumny z dokładnie dwiema niepustymi wartościami.
+        binary_columns = [
+            column
+            for column in self.clean_df.columns
+            if self.clean_df[column].dropna().nunique() == 2
+        ]
+
+        numeric_columns, _ = (
+            self.get_numeric_and_categorical_columns()
+        )
+
+        self.logistic_dependent_combo = QComboBox()
+        self.logistic_dependent_combo.addItems(binary_columns)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+
+        scroll_content = QWidget()
+        checkbox_layout = QVBoxLayout()
+
+        self.logistic_predictor_checkboxes = []
+
+        for column in numeric_columns:
+            checkbox = QCheckBox(str(column))
+            self.logistic_predictor_checkboxes.append(checkbox)
+            checkbox_layout.addWidget(checkbox)
+
+        checkbox_layout.addStretch()
+        scroll_content.setLayout(checkbox_layout)
+        scroll_area.setWidget(scroll_content)
+
+        calculate_button = QPushButton(
+            "Oblicz regresję logistyczną"
+        )
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            self.calculate_logistic_regression
+        )
+
+        add_to_report_button = QPushButton(
+            "Dodaj do raportu"
+        )
+        add_to_report_button.setMinimumHeight(45)
+        add_to_report_button.clicked.connect(
+            self.add_current_results_to_report
+        )
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(
+            self.show_advanced_relationship_question
+        )
+
+        self.recommended_test_output = QTextEdit()
+        self.recommended_test_output.setReadOnly(True)
+
+        layout.addWidget(title)
+        layout.addWidget(description)
+
+        layout.addWidget(QLabel("Binarna zmienna zależna:"))
+        layout.addWidget(self.logistic_dependent_combo)
+
+        layout.addWidget(QLabel("Zmienne niezależne:"))
+        layout.addWidget(scroll_area)
+
+        layout.addWidget(calculate_button)
+        layout.addWidget(add_to_report_button)
+
+        layout.addWidget(QLabel("Wyniki:"))
+        layout.addWidget(self.recommended_test_output)
+
+        layout.addWidget(back_button)
+        layout.addStretch()
+
+    def calculate_logistic_regression(self):
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
+
+            dependent_variable = (
+                self.logistic_dependent_combo.currentText()
+            )
+
+            independent_variables = [
+                checkbox.text()
+                for checkbox in self.logistic_predictor_checkboxes
+                if checkbox.isChecked()
+            ]
+
+            if not dependent_variable:
+                QMessageBox.warning(
+                    self,
+                    "Brak zmiennej zależnej",
+                    "Nie znaleziono lub nie wybrano binarnej "
+                    "zmiennej zależnej."
+                )
+                return
+
+            if dependent_variable in independent_variables:
+                QMessageBox.warning(
+                    self,
+                    "Nieprawidłowy wybór",
+                    "Zmienna zależna nie może być jednocześnie "
+                    "zmienną niezależną."
+                )
+                return
+
+            if len(independent_variables) < 2:
+                QMessageBox.warning(
+                    self,
+                    "Za mało predyktorów",
+                    "Wybierz co najmniej dwie zmienne niezależne."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+            formatter = ReportFormatter()
+
+            result = stats_engine.run_test(
+                test_id="logistic_regression",
+                dataframe=self.clean_df,
+                dependent_var=dependent_variable,
+                variables=independent_variables,
+            )
+
+            text = formatter.format(
+                test_id="logistic_regression",
+                result=result,
+                independent_var=independent_variables,
+                dependent_var=dependent_variable,
+            )
+
+            self.current_analysis_result = text
+            self.current_analysis_name = (
+                "Regresja logistyczna"
+            )
+
+            self.recommended_test_output.setText(text)
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd regresji logistycznej",
+                str(error)
+            )
+
 
     def show_linear_regression_variables(self):
         if self.clean_df is None:

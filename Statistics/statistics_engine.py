@@ -2,6 +2,7 @@
 import pandas as pd
 import pingouin as pg
 import statsmodels.api as sm
+import numpy as np
 
 from scipy.stats import (
     chi2_contingency,
@@ -163,12 +164,265 @@ class StatisticsEngine:
                 dependent_variable=dependent_var,
                 independent_variables=variables,
             )
+        if test_id == "logistic_regression":
+            return self.logistic_regression_test(
+                dataframe=dataframe,
+                dependent_variable=dependent_var,
+                independent_variables=variables,
+            )
 
         raise ValueError(
             f"Nieznany identyfikator testu: {test_id}"
         )
+    #Regresja logiczna
+    def logistic_regression_test(
+            self,
+            dataframe,
+            dependent_variable,
+            independent_variables,
+    ):
+        if not dependent_variable:
+            raise ValueError(
+                "Nie podano zmiennej zależnej."
+            )
 
-    #Regresja
+        if not isinstance(
+                independent_variables,
+                (list, tuple)
+        ):
+            raise TypeError(
+                "Zmienne niezależne muszą być listą lub krotką."
+            )
+
+        if len(independent_variables) < 2:
+            raise ValueError(
+                "Regresja logistyczna wieloraka wymaga "
+                "co najmniej dwóch predyktorów."
+            )
+
+        all_variables = [
+            dependent_variable,
+            *independent_variables,
+        ]
+
+        missing_columns = [
+            variable
+            for variable in all_variables
+            if variable not in dataframe.columns
+        ]
+
+        if missing_columns:
+            raise ValueError(
+                "Nie znaleziono kolumn: "
+                + ", ".join(missing_columns)
+            )
+
+        if dependent_variable in independent_variables:
+            raise ValueError(
+                "Zmienna zależna nie może być predyktorem."
+            )
+
+        data = dataframe[all_variables].copy()
+        data = data.dropna(
+            subset=[dependent_variable]
+        )
+
+        dependent_categories = list(
+            pd.unique(data[dependent_variable].dropna())
+        )
+
+        if len(dependent_categories) != 2:
+            raise ValueError(
+                "Binarna regresja logistyczna wymaga zmiennej "
+                "zależnej mającej dokładnie dwie kategorie."
+            )
+
+        category_0 = dependent_categories[0]
+        category_1 = dependent_categories[1]
+
+        data[dependent_variable] = data[
+            dependent_variable
+        ].map({
+            category_0: 0,
+            category_1: 1,
+        })
+
+        for variable in independent_variables:
+            data[variable] = pd.to_numeric(
+                data[variable],
+                errors="coerce"
+            )
+
+        data = data.dropna()
+
+        minimum_observations = (
+                len(independent_variables) + 3
+        )
+
+        if len(data) < minimum_observations:
+            raise ValueError(
+                "Za mało kompletnych obserwacji względem "
+                "liczby predyktorów."
+            )
+
+        y = data[dependent_variable].astype(int)
+
+        if y.nunique() != 2:
+            raise ValueError(
+                "Po usunięciu braków danych pozostała tylko "
+                "jedna kategoria zmiennej zależnej."
+            )
+
+        x = data[list(independent_variables)].astype(float)
+
+        # Logit nie dodaje wyrazu wolnego automatycznie.
+        x = sm.add_constant(
+            x,
+            has_constant="add"
+        )
+
+        try:
+            model = sm.Logit(
+                y,
+                x
+            ).fit(
+                disp=False,
+                maxiter=200
+            )
+        except Exception as error:
+            raise ValueError(
+                "Nie udało się dopasować modelu logistycznego. "
+                "Możliwą przyczyną jest idealne rozdzielenie "
+                "kategorii, silna współliniowość albo za mała "
+                f"liczba obserwacji. Szczegóły: {error}"
+            ) from error
+
+        confidence_intervals = model.conf_int()
+
+        coefficients = []
+
+        for variable_name in model.params.index:
+            coefficient = float(
+                model.params[variable_name]
+            )
+
+            standard_error = float(
+                model.bse[variable_name]
+            )
+
+            z_statistic = float(
+                model.tvalues[variable_name]
+            )
+
+            p_value = float(
+                model.pvalues[variable_name]
+            )
+
+            ci_lower = float(
+                confidence_intervals.loc[
+                    variable_name
+                ].iloc[0]
+            )
+
+            ci_upper = float(
+                confidence_intervals.loc[
+                    variable_name
+                ].iloc[1]
+            )
+
+            odds_ratio = float(
+                np.exp(coefficient)
+            )
+
+            odds_ratio_ci_lower = float(
+                np.exp(ci_lower)
+            )
+
+            odds_ratio_ci_upper = float(
+                np.exp(ci_upper)
+            )
+
+            if variable_name == "const":
+                display_name = "Wyraz wolny"
+            else:
+                display_name = str(variable_name)
+
+            coefficients.append({
+                "zmienna": display_name,
+                "nazwa_techniczna": str(variable_name),
+                "wspolczynnik": coefficient,
+                "blad_standardowy": standard_error,
+                "statystyka_z": z_statistic,
+                "p_value": p_value,
+                "ci_95_lower": ci_lower,
+                "ci_95_upper": ci_upper,
+                "odds_ratio": odds_ratio,
+                "or_ci_95_lower": odds_ratio_ci_lower,
+                "or_ci_95_upper": odds_ratio_ci_upper,
+                "istotne_statystycznie": bool(
+                    p_value < 0.05
+                ),
+            })
+
+        predicted_probabilities = model.predict(x)
+
+        predicted_classes = (
+                predicted_probabilities >= 0.5
+        ).astype(int)
+
+        accuracy = float(
+            (predicted_classes == y).mean()
+        )
+
+        likelihood_ratio_statistic = float(
+            model.llr
+        )
+
+        likelihood_ratio_p_value = float(
+            model.llr_pvalue
+        )
+
+        result = {
+            "test": "logistic_regression",
+            "zmienna_zalezna": dependent_variable,
+            "zmienne_niezalezne": list(
+                independent_variables
+            ),
+            "kategoria_0": str(category_0),
+            "kategoria_1": str(category_1),
+            "liczba_obserwacji": int(model.nobs),
+            "pseudo_r_squared_mcfadden": float(
+                model.prsquared
+            ),
+            "log_likelihood": float(model.llf),
+            "log_likelihood_null": float(model.llnull),
+            "likelihood_ratio_statistic": (
+                likelihood_ratio_statistic
+            ),
+            "p_value_modelu": likelihood_ratio_p_value,
+            "aic": float(model.aic),
+            "bic": float(model.bic),
+            "accuracy_threshold_05": accuracy,
+            "wspolczynniki": coefficients,
+            "model_istotny": bool(
+                likelihood_ratio_p_value < 0.05
+            ),
+            "interpretacja": self.interpret_p_value(
+                likelihood_ratio_p_value
+            ),
+        }
+
+        self.report.append(
+            "Wykonano regresję logistyczną dla zmiennej "
+            f"zależnej '{dependent_variable}' oraz "
+            "predyktorów: "
+            + ", ".join(independent_variables)
+            + "."
+        )
+
+        return result
+
+    #Regresja liniowa
     def linear_regression_test(
             self,
             dataframe,
