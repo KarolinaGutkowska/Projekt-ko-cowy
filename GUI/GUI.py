@@ -1139,7 +1139,16 @@ class MainWindow(QWidget):
             self.get_numeric_and_categorical_columns()
         )
 
-        for column in numeric_columns:
+        if test_id == "cochran_q":
+            columns = [
+                column
+                for column in self.clean_df.columns
+                if self.clean_df[column].dropna().nunique() == 2
+            ]
+        else:
+            columns = numeric_columns
+
+        for column in columns:
             checkbox = QCheckBox(str(column))
             self.multiple_dependent_checkboxes.append(checkbox)
             checkbox_layout.addWidget(checkbox)
@@ -1181,6 +1190,8 @@ class MainWindow(QWidget):
         layout.addWidget(QLabel("Wyniki:"))
         layout.addWidget(self.recommended_test_output)
         layout.addWidget(back_button)
+        layout.addStretch()
+
 
     def calculate_multiple_dependent_test(
             self,

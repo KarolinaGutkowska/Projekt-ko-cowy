@@ -1,5 +1,6 @@
 
 import pandas as pd
+import pingouin as pg
 
 from scipy.stats import (
     chi2_contingency,

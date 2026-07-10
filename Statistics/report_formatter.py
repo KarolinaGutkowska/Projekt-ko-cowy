@@ -224,6 +224,45 @@ INTERPRETACJA:
     ========================================
     """.strip()
 
+    def format_cochran_q(
+            self,
+            result,
+            independent_var=None,
+            dependent_var=None,
+    ):
+        measurements = "\n".join(
+            f"- {measurement}"
+            for measurement in result["pomiary"]
+        )
+
+        return f"""
+    ========================================
+    TEST Q COCHRANA
+    ========================================
+
+    PORÓWNYWANE POMIARY:
+    {measurements}
+
+    LICZBA POMIARÓW:
+    {result['liczba_pomiarow']}
+
+    LICZBA KOMPLETNYCH PRZYPADKÓW:
+    {result['liczba_kompletnych_przypadkow']}
+
+    KODOWANIE KATEGORII:
+    0 = {result['kategoria_0']}
+    1 = {result['kategoria_1']}
+
+    WYNIKI TESTU:
+    Q = {result['statystyka_Q']:.4f}
+    df = {result['degrees_of_freedom']}
+    p-value = {result['p_value']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+    ========================================
+    """.strip()
+
     def format_t_independent(
         self,
         result,
