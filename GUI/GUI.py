@@ -2846,43 +2846,55 @@ class MainWindow(QWidget):
             )
             return
 
-        stats_engine = StatisticsEngine()
+        try:
+            stats_engine = StatisticsEngine()
 
-        if data_type == "ilościowe":
-            result = stats_engine.descriptive_statistics_selected(
-                self.clean_df,
-                selected_columns
-            )
+            if data_type == "ilościowe":
+                result = stats_engine.descriptive_statistics_selected(
+                    self.clean_df,
+                    selected_columns
+                )
+
+                analysis_name = (
+                    "Statystyki opisowe — dane ilościowe"
+                )
+
+            else:
+                result = stats_engine.qualitative_statistics_selected(
+                    self.clean_df,
+                    selected_columns
+                )
+
+                analysis_name = (
+                    "Statystyki opisowe — dane jakościowe"
+                )
+
+            if result is None or result.empty:
+                QMessageBox.warning(
+                    self,
+                    "Brak wyników",
+                    "Nie udało się obliczyć statystyk "
+                    "dla wybranych zmiennych."
+                )
+                return
 
             model = PandasTableModel(result)
             self.analysis_table.setModel(model)
             self.analysis_table.resizeColumnsToContents()
 
+            # Zachowuje model, aby nie został usunięty z pamięci.
             self.analysis_table_model = model
 
-
-        else:
-
-            result = stats_engine.qualitative_statistics_selected(
-
-                self.clean_df,
-
-                selected_columns
-
-            )
-
-            model = PandasTableModel(result)
-
-            self.analysis_table.setModel(model)
-
-            self.analysis_table.resizeColumnsToContents()
-
-            self.analysis_table_model = model
-
+            # Te linie są konieczne do dodawania wyniku do raportu.
             self.current_analysis_result = result
+            self.current_analysis_name = analysis_name
 
-            self.current_analysis_name = "Statystyki opisowe - dane jakościowe"
-
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd statystyk opisowych",
+                str(error)
+            )
     def build_normality_page(self):
         layout = QVBoxLayout()
 
