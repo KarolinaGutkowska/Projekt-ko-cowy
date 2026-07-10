@@ -66,7 +66,11 @@ class TestSelector:
             raise ValueError(
                 "Nieznany typ zmiennej zależnej."
             )
+        if dependent_type == "nominal":
+            if groups_count == 2:
+                return "mcnemar"
 
+            return "cochran_q"
         if normal is None:
             return "dependent_normality_required"
 

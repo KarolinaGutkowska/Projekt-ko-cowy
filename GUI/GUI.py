@@ -703,7 +703,14 @@ class MainWindow(QWidget):
         layout.addWidget(back_button)
         layout.addStretch()
 
-    def show_dependent_test(self, test_id, display_name):
+    def show_dependent_test(
+            self,
+            test_id,
+            display_name,
+            selected_first_variable=None,
+            selected_second_variable=None,
+            information_text=None,
+    ):
         self.clear_analysis_page()
         layout = self.analysis_page.layout()
 
@@ -767,12 +774,37 @@ class MainWindow(QWidget):
 
         layout.addWidget(title)
         layout.addWidget(test_label)
+        if information_text:
+            information_output = QTextEdit()
+            information_output.setReadOnly(True)
+            information_output.setMaximumHeight(240)
+            information_output.setText(information_text)
+            layout.addWidget(information_output)
 
         layout.addWidget(QLabel("Pierwszy pomiar:"))
         layout.addWidget(self.dependent_first_variable_combo)
 
         layout.addWidget(QLabel("Drugi pomiar:"))
         layout.addWidget(self.dependent_second_variable_combo)
+        if selected_first_variable:
+            index = self.dependent_first_variable_combo.findText(
+                selected_first_variable
+            )
+
+            if index >= 0:
+                self.dependent_first_variable_combo.setCurrentIndex(
+                    index
+                )
+
+        if selected_second_variable:
+            index = self.dependent_second_variable_combo.findText(
+                selected_second_variable
+            )
+
+            if index >= 0:
+                self.dependent_second_variable_combo.setCurrentIndex(
+                    index
+                )
 
         layout.addWidget(calculate_button)
         layout.addWidget(add_to_report_button)
@@ -887,6 +919,180 @@ class MainWindow(QWidget):
                 "Błąd obliczeń",
                 str(e)
             )
+
+    def show_dependent_quantitative_normality(self):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Sprawdzenie normalności różnic")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        description = QLabel(
+            "Wybierz dwa pomiary. Program obliczy różnice między "
+            "nimi, sprawdzi ich normalność i automatycznie wybierze "
+            "test t dla prób zależnych albo test Wilcoxona."
+        )
+        description.setWordWrap(True)
+
+        self.paired_normality_first_combo = QComboBox()
+        self.paired_normality_second_combo = QComboBox()
+
+        numeric_columns, _ = (
+            self.get_numeric_and_categorical_columns()
+        )
+
+        self.paired_normality_first_combo.addItems(
+            numeric_columns
+        )
+
+        self.paired_normality_second_combo.addItems(
+            numeric_columns
+        )
+
+        if self.paired_normality_second_combo.count() > 1:
+            self.paired_normality_second_combo.setCurrentIndex(1)
+
+        calculate_button = QPushButton(
+            "Sprawdź normalność i dobierz test"
+        )
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            self.calculate_dependent_quantitative_normality
+        )
+
+        self.paired_normality_output = QTextEdit()
+        self.paired_normality_output.setReadOnly(True)
+        self.paired_normality_output.setMaximumHeight(220)
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(
+            lambda: self.compare_groups_question_3(
+                self.compare_groups_count
+            )
+        )
+
+        layout.addWidget(title)
+        layout.addWidget(description)
+
+        layout.addWidget(QLabel("Pierwszy pomiar:"))
+        layout.addWidget(self.paired_normality_first_combo)
+
+        layout.addWidget(QLabel("Drugi pomiar:"))
+        layout.addWidget(self.paired_normality_second_combo)
+
+        layout.addWidget(calculate_button)
+        layout.addWidget(self.paired_normality_output)
+        layout.addWidget(back_button)
+        layout.addStretch()
+
+    def calculate_dependent_quantitative_normality(self):
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
+
+            first_variable = (
+                self.paired_normality_first_combo.currentText()
+            )
+
+            second_variable = (
+                self.paired_normality_second_combo.currentText()
+            )
+
+            if not first_variable or not second_variable:
+                QMessageBox.warning(
+                    self,
+                    "Brak zmiennych",
+                    "Wybierz oba pomiary."
+                )
+                return
+
+            if first_variable == second_variable:
+                QMessageBox.warning(
+                    self,
+                    "Nieprawidłowy wybór",
+                    "Wybierz dwie różne kolumny."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+
+            normality_result = (
+                stats_engine.paired_differences_normality_test(
+                    self.clean_df,
+                    first_variable,
+                    second_variable,
+                )
+            )
+
+            test_id = self.test_selector.select_dependent_test(
+                groups_count=2,
+                dependent_type="quantitative",
+                normal=normality_result["is_normal"],
+            )
+
+            display_names = {
+                "t_paired": (
+                    "Test t-Studenta dla prób zależnych"
+                ),
+                "wilcoxon": "Test Wilcoxona",
+            }
+
+            display_name = display_names.get(test_id)
+
+            if display_name is None:
+                raise ValueError(
+                    f"Nie znaleziono nazwy testu: {test_id}"
+                )
+
+            normality_text = (
+                "=== TEST NORMALNOŚCI RÓŻNIC ===\n\n"
+                f"Pierwszy pomiar: {first_variable}\n"
+                f"Drugi pomiar: {second_variable}\n"
+                f"Liczba par: "
+                f"{normality_result['sample_size']}\n\n"
+                f"Statystyka W: "
+                f"{normality_result['statistic']:.4f}\n"
+                f"p-value: "
+                f"{normality_result['p_value']:.4f}\n\n"
+            )
+
+            if normality_result["is_normal"]:
+                normality_text += (
+                    "Różnice mają rozkład zgodny z normalnym.\n"
+                    "Wybrano test t dla prób zależnych."
+                )
+            else:
+                normality_text += (
+                    "Różnice odbiegają od rozkładu normalnego.\n"
+                    "Wybrano test Wilcoxona."
+                )
+
+            self.show_dependent_test(
+                test_id,
+                display_name,
+                selected_first_variable=first_variable,
+                selected_second_variable=second_variable,
+                information_text=normality_text,
+            )
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd doboru testu",
+                str(error)
+            )
+
+
     def show_variable_checkbox_list(self, data_type):
         if self.clean_df is None:
             QMessageBox.warning(

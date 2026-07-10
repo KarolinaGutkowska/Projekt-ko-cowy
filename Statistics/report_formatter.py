@@ -60,6 +60,20 @@ class ReportFormatter:
                 dependent_var
             )
 
+        elif test_id == "t_paired":
+            return self.format_t_paired(
+                result,
+                independent_var,
+                dependent_var
+            )
+
+        elif test_id == "mcnemar":
+            return self.format_mcnemar(
+                result,
+                independent_var,
+                dependent_var
+            )
+
 
         else:
             return (
@@ -125,6 +139,45 @@ INTERPRETACJA:
 {result['interpretacja']}
 ========================================
 """.strip()
+
+    def format_mcnemar(
+            self,
+            result,
+            first_variable,
+            second_variable
+    ):
+        table = result["tabela"]
+
+        return f"""
+    ========================================
+    TEST McNEMARA
+    ========================================
+
+    PIERWSZY POMIAR:
+    {first_variable}
+
+    DRUGI POMIAR:
+    {second_variable}
+
+    LICZBA KOMPLETNYCH PAR:
+    {result['liczba_par']}
+
+    KATEGORIE:
+    {result['kategoria_1']}
+    {result['kategoria_2']}
+
+    TABELA 2 × 2:
+    {table[0][0]}    {table[0][1]}
+    {table[1][0]}    {table[1][1]}
+
+    WYNIKI TESTU:
+    Statystyka = {result['statystyka']:.4f}
+    p-value = {result['p_value']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+    ========================================
+    """.strip()
 
     def format_t_independent(
         self,
@@ -285,6 +338,41 @@ INTERPRETACJA:
 {result['interpretacja']}
 ========================================
 """.strip()
+
+    def format_t_paired(
+            self,
+            result,
+            first_variable,
+            second_variable
+    ):
+        return f"""
+    ========================================
+    TEST T-STUDENTA DLA PRÓB ZALEŻNYCH
+    ========================================
+
+    PIERWSZY POMIAR:
+    {first_variable}
+
+    DRUGI POMIAR:
+    {second_variable}
+
+    LICZBA KOMPLETNYCH PAR:
+    {result['liczba_par']}
+
+    ŚREDNIA — POMIAR 1:
+    {result['srednia_1']:.4f}
+
+    ŚREDNIA — POMIAR 2:
+    {result['srednia_2']:.4f}
+
+    WYNIKI TESTU:
+    t = {result['statystyka_t']:.4f}
+    p-value = {result['p_value']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+    ========================================
+    """.strip()
 
     def format_wilcoxon(
             self,

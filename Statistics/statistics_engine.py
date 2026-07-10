@@ -9,7 +9,8 @@ from scipy.stats import (
     mannwhitneyu,
     shapiro,
     ttest_ind,
-    wilcoxon
+    wilcoxon,
+    ttest_rel
 )
 
 from statsmodels.stats.oneway import anova_oneway
@@ -91,6 +92,19 @@ class StatisticsEngine:
 
         if test_id == "wilcoxon":
             return self.wilcoxon_test(
+                dataframe,
+                independent_var,
+                dependent_var
+            )
+
+        if test_id == "t_paired":
+            return self.paired_t_test(
+                dataframe,
+                independent_var,
+                dependent_var
+            )
+        if test_id == "mcnemar":
+            return self.mcnemar_test(
                 dataframe,
                 independent_var,
                 dependent_var
@@ -188,6 +202,189 @@ class StatisticsEngine:
 
         return result
 
+    #Test Mcnemar
+    def mcnemar_test(
+            self,
+            dataframe,
+            first_variable,
+            second_variable,
+    ):
+        data = dataframe[
+            [first_variable, second_variable]
+        ].dropna().copy()
+
+        if data.empty:
+            raise ValueError(
+                "Brak kompletnych par obserwacji."
+            )
+
+        first_values = data[first_variable].unique()
+        second_values = data[second_variable].unique()
+
+        all_values = list(
+            pd.unique(
+                pd.concat([
+                    data[first_variable],
+                    data[second_variable]
+                ])
+            )
+        )
+
+        if len(all_values) != 2:
+            raise ValueError(
+                "Test McNemara wymaga dwóch kategorii."
+            )
+
+        category_1 = all_values[0]
+        category_2 = all_values[1]
+
+        contingency_table = pd.crosstab(
+            data[first_variable],
+            data[second_variable]
+        )
+
+        contingency_table = contingency_table.reindex(
+            index=[category_1, category_2],
+            columns=[category_1, category_2],
+            fill_value=0
+        )
+
+        result_test = mcnemar(
+            contingency_table,
+            exact=True
+        )
+
+        statistic = float(result_test.statistic)
+        p_value = float(result_test.pvalue)
+
+        result = {
+            "test": "mcnemar",
+            "pomiar_1": first_variable,
+            "pomiar_2": second_variable,
+            "kategoria_1": str(category_1),
+            "kategoria_2": str(category_2),
+            "liczba_par": int(len(data)),
+            "tabela": contingency_table.values.tolist(),
+            "statystyka": statistic,
+            "p_value": p_value,
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
+        }
+
+        self.report.append(
+            f"Wykonano test McNemara dla "
+            f"'{first_variable}' i '{second_variable}'."
+        )
+
+        return result
+
+    #Test normalności różnic
+    def paired_differences_normality_test(
+            self,
+            dataframe,
+            first_variable,
+            second_variable,
+    ):
+        data = dataframe[
+            [first_variable, second_variable]
+        ].copy()
+
+        data[first_variable] = pd.to_numeric(
+            data[first_variable],
+            errors="coerce"
+        )
+
+        data[second_variable] = pd.to_numeric(
+            data[second_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna()
+
+        if len(data) < 3:
+            raise ValueError(
+                "Test normalności różnic wymaga co najmniej "
+                "trzech kompletnych par obserwacji."
+            )
+
+        differences = (
+                data[first_variable] - data[second_variable]
+        )
+
+        statistic, p_value = shapiro(differences)
+
+        result = {
+            "test_id": "shapiro_paired_differences",
+            "test": "Shapiro-Wilk",
+            "first_variable": first_variable,
+            "second_variable": second_variable,
+            "sample_size": int(len(differences)),
+            "statistic": float(statistic),
+            "p_value": float(p_value),
+            "is_normal": bool(p_value >= 0.05),
+            "alpha": 0.05,
+        }
+
+        self.report.append(
+            f"Wykonano test Shapiro-Wilka dla różnic między "
+            f"'{first_variable}' i '{second_variable}'."
+        )
+
+        return result
+    #Test t dla prób zależnych
+    def paired_t_test(
+            self,
+            dataframe,
+            first_variable,
+            second_variable,
+    ):
+        data = dataframe[
+            [first_variable, second_variable]
+        ].copy()
+
+        data[first_variable] = pd.to_numeric(
+            data[first_variable],
+            errors="coerce"
+        )
+
+        data[second_variable] = pd.to_numeric(
+            data[second_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna()
+
+        if len(data) < 2:
+            raise ValueError(
+                "Test t dla prób zależnych wymaga co najmniej "
+                "dwóch kompletnych par obserwacji."
+            )
+
+        statistic, p_value = ttest_rel(
+            data[first_variable],
+            data[second_variable],
+            nan_policy="omit",
+        )
+
+        result = {
+            "test": "t_paired",
+            "pomiar_1": first_variable,
+            "pomiar_2": second_variable,
+            "liczba_par": int(len(data)),
+            "srednia_1": float(data[first_variable].mean()),
+            "srednia_2": float(data[second_variable].mean()),
+            "statystyka_t": float(statistic),
+            "p_value": float(p_value),
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
+        }
+
+        self.report.append(
+            f"Wykonano test t dla prób zależnych dla "
+            f"'{first_variable}' i '{second_variable}'."
+        )
+
+        return result
     #Wilcoxon
     def wilcoxon_test(
             self,
