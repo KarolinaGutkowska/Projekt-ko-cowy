@@ -183,10 +183,258 @@ class StatisticsEngine:
                 mediator_variable=variables[0],
                 dependent_variable=dependent_var,
             )
+        if test_id == "moderation":
+            if not variables or len(variables) != 1:
+                raise ValueError(
+                    "Dla analizy moderacji należy przekazać "
+                    "dokładnie jeden moderator."
+                )
+
+            return self.moderation_test(
+                dataframe=dataframe,
+                independent_variable=independent_var,
+                moderator_variable=variables[0],
+                dependent_variable=dependent_var,
+            )
 
         raise ValueError(
             f"Nieznany identyfikator testu: {test_id}"
         )
+    #Moderacje
+    def moderation_test(
+            self,
+            dataframe,
+            independent_variable,
+            moderator_variable,
+            dependent_variable,
+    ):
+        variables = [
+            independent_variable,
+            moderator_variable,
+            dependent_variable,
+        ]
+
+        if len(set(variables)) != 3:
+            raise ValueError(
+                "Zmienna X, moderator W i zmienna Y "
+                "muszą być różnymi kolumnami."
+            )
+
+        missing_columns = [
+            variable
+            for variable in variables
+            if variable not in dataframe.columns
+        ]
+
+        if missing_columns:
+            raise ValueError(
+                "Nie znaleziono kolumn: "
+                + ", ".join(missing_columns)
+            )
+
+        data = dataframe[variables].copy()
+
+        for variable in variables:
+            data[variable] = pd.to_numeric(
+                data[variable],
+                errors="coerce"
+            )
+
+        data = data.dropna()
+
+        if len(data) < 10:
+            raise ValueError(
+                "Analiza moderacji wymaga co najmniej "
+                "10 kompletnych obserwacji."
+            )
+
+        for variable in variables:
+            if data[variable].nunique() < 2:
+                raise ValueError(
+                    f"Zmienna „{variable}” nie zawiera "
+                    "wystarczającej zmienności."
+                )
+
+        x_mean = float(data[independent_variable].mean())
+        w_mean = float(data[moderator_variable].mean())
+
+        x_centered_name = f"{independent_variable}_centered"
+        w_centered_name = f"{moderator_variable}_centered"
+        interaction_name = "X_x_W"
+
+        data[x_centered_name] = (
+                data[independent_variable] - x_mean
+        )
+
+        data[w_centered_name] = (
+                data[moderator_variable] - w_mean
+        )
+
+        data[interaction_name] = (
+                data[x_centered_name]
+                * data[w_centered_name]
+        )
+
+        predictors = [
+            x_centered_name,
+            w_centered_name,
+            interaction_name,
+        ]
+
+        x_matrix = sm.add_constant(
+            data[predictors],
+            has_constant="add"
+        )
+
+        y = data[dependent_variable]
+
+        model = sm.OLS(
+            y,
+            x_matrix
+        ).fit()
+
+        confidence_intervals = model.conf_int()
+
+        coefficients = []
+
+        display_names = {
+            "const": "Wyraz wolny",
+            x_centered_name: independent_variable,
+            w_centered_name: moderator_variable,
+            interaction_name: (
+                f"{independent_variable} × {moderator_variable}"
+            ),
+        }
+
+        for variable_name in model.params.index:
+            confidence_interval = confidence_intervals.loc[
+                variable_name
+            ]
+
+            coefficients.append({
+                "zmienna": display_names.get(
+                    variable_name,
+                    str(variable_name)
+                ),
+                "nazwa_techniczna": str(variable_name),
+                "wspolczynnik": float(
+                    model.params[variable_name]
+                ),
+                "blad_standardowy": float(
+                    model.bse[variable_name]
+                ),
+                "statystyka_t": float(
+                    model.tvalues[variable_name]
+                ),
+                "p_value": float(
+                    model.pvalues[variable_name]
+                ),
+                "ci_95_lower": float(
+                    confidence_interval.iloc[0]
+                ),
+                "ci_95_upper": float(
+                    confidence_interval.iloc[1]
+                ),
+                "istotne_statystycznie": bool(
+                    model.pvalues[variable_name] < 0.05
+                ),
+            })
+
+        interaction_coefficient = float(
+            model.params[interaction_name]
+        )
+
+        interaction_p_value = float(
+            model.pvalues[interaction_name]
+        )
+
+        moderator_standard_deviation = float(
+            data[moderator_variable].std(ddof=1)
+        )
+
+        moderator_levels = {
+            "niski": (
+                    w_mean - moderator_standard_deviation
+            ),
+            "sredni": w_mean,
+            "wysoki": (
+                    w_mean + moderator_standard_deviation
+            ),
+        }
+
+        main_x_effect = float(
+            model.params[x_centered_name]
+        )
+
+        simple_slopes = {}
+
+        for level_name, level_value in moderator_levels.items():
+            centered_level = level_value - w_mean
+
+            slope = (
+                    main_x_effect
+                    + interaction_coefficient * centered_level
+            )
+
+            simple_slopes[level_name] = {
+                "wartosc_moderatora": float(level_value),
+                "nachylenie_X": float(slope),
+            }
+
+        if interaction_p_value < 0.05:
+            moderation_interpretation = (
+                "Interakcja X × W jest istotna statystycznie. "
+                "Wpływ zmiennej X na Y zależy od poziomu moderatora W."
+            )
+        else:
+            moderation_interpretation = (
+                "Interakcja X × W nie jest istotna statystycznie. "
+                "Nie stwierdzono, aby wpływ X na Y zależał "
+                "od poziomu moderatora W."
+            )
+
+        result = {
+            "test": "moderation",
+            "zmienna_niezalezna": independent_variable,
+            "moderator": moderator_variable,
+            "zmienna_zalezna": dependent_variable,
+            "liczba_obserwacji": int(model.nobs),
+            "srednia_X": x_mean,
+            "srednia_W": w_mean,
+            "r_squared": float(model.rsquared),
+            "adjusted_r_squared": float(
+                model.rsquared_adj
+            ),
+            "statystyka_F": float(model.fvalue),
+            "p_value_modelu": float(
+                model.f_pvalue
+            ),
+            "df_model": float(model.df_model),
+            "df_residual": float(model.df_resid),
+            "aic": float(model.aic),
+            "bic": float(model.bic),
+            "wspolczynniki": coefficients,
+            "interakcja_wspolczynnik": (
+                interaction_coefficient
+            ),
+            "interakcja_p_value": (
+                interaction_p_value
+            ),
+            "interakcja_istotna": bool(
+                interaction_p_value < 0.05
+            ),
+            "simple_slopes": simple_slopes,
+            "interpretacja": moderation_interpretation,
+        }
+
+        self.report.append(
+            "Wykonano analizę moderacji: "
+            f"{independent_variable} × "
+            f"{moderator_variable} → "
+            f"{dependent_variable}."
+        )
+
+        return result
     #Mediacje
     def mediation_test(
             self,

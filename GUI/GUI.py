@@ -260,9 +260,7 @@ class MainWindow(QWidget):
         )
 
         moderation_button.clicked.connect(
-            lambda: self.show_analysis_not_ready(
-                "Analiza moderacji"
-            )
+            self.show_moderation_variables
         )
 
         back_button = QPushButton("Wstecz")
@@ -287,6 +285,169 @@ class MainWindow(QWidget):
             f"{analysis_name} zostanie dodana "
             "w następnym etapie."
         )
+
+    def calculate_moderation(self):
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
+
+            independent_variable = (
+                self.moderation_x_combo.currentText()
+            )
+
+            moderator_variable = (
+                self.moderation_w_combo.currentText()
+            )
+
+            dependent_variable = (
+                self.moderation_y_combo.currentText()
+            )
+
+            selected_variables = {
+                independent_variable,
+                moderator_variable,
+                dependent_variable,
+            }
+
+            if "" in selected_variables:
+                QMessageBox.warning(
+                    self,
+                    "Brak zmiennych",
+                    "Wybierz wszystkie trzy zmienne."
+                )
+                return
+
+            if len(selected_variables) != 3:
+                QMessageBox.warning(
+                    self,
+                    "Nieprawidłowy wybór",
+                    "X, moderator W i Y muszą być różnymi kolumnami."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+            formatter = ReportFormatter()
+
+            result = stats_engine.run_test(
+                test_id="moderation",
+                dataframe=self.clean_df,
+                independent_var=independent_variable,
+                dependent_var=dependent_variable,
+                variables=[moderator_variable],
+            )
+
+            text = formatter.format(
+                test_id="moderation",
+                result=result,
+                independent_var=independent_variable,
+                dependent_var=dependent_variable,
+            )
+
+            self.current_analysis_result = text
+            self.current_analysis_name = "Analiza moderacji"
+
+            self.recommended_test_output.setText(text)
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd analizy moderacji",
+                str(error)
+            )
+
+    def show_moderation_variables(self):
+        if self.clean_df is None:
+            QMessageBox.warning(
+                self,
+                "Brak danych",
+                "Najpierw wczytaj plik."
+            )
+            return
+
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Analiza moderacji")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        description = QLabel(
+            "Wybierz zmienną niezależną X, moderator W oraz "
+            "zmienną zależną Y. Wszystkie zmienne muszą być ilościowe."
+        )
+        description.setWordWrap(True)
+
+        numeric_columns, _ = (
+            self.get_numeric_and_categorical_columns()
+        )
+
+        self.moderation_x_combo = QComboBox()
+        self.moderation_w_combo = QComboBox()
+        self.moderation_y_combo = QComboBox()
+
+        self.moderation_x_combo.addItems(numeric_columns)
+        self.moderation_w_combo.addItems(numeric_columns)
+        self.moderation_y_combo.addItems(numeric_columns)
+
+        if self.moderation_w_combo.count() > 1:
+            self.moderation_w_combo.setCurrentIndex(1)
+
+        if self.moderation_y_combo.count() > 2:
+            self.moderation_y_combo.setCurrentIndex(2)
+
+        calculate_button = QPushButton(
+            "Oblicz analizę moderacji"
+        )
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            self.calculate_moderation
+        )
+
+        add_to_report_button = QPushButton(
+            "Dodaj do raportu"
+        )
+        add_to_report_button.setMinimumHeight(45)
+        add_to_report_button.clicked.connect(
+            self.add_current_results_to_report
+        )
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(
+            self.show_advanced_relationship_question
+        )
+
+        self.recommended_test_output = QTextEdit()
+        self.recommended_test_output.setReadOnly(True)
+
+        layout.addWidget(title)
+        layout.addWidget(description)
+
+        layout.addWidget(QLabel("Zmienna niezależna X:"))
+        layout.addWidget(self.moderation_x_combo)
+
+        layout.addWidget(QLabel("Moderator W:"))
+        layout.addWidget(self.moderation_w_combo)
+
+        layout.addWidget(QLabel("Zmienna zależna Y:"))
+        layout.addWidget(self.moderation_y_combo)
+
+        layout.addWidget(calculate_button)
+        layout.addWidget(add_to_report_button)
+
+        layout.addWidget(QLabel("Wyniki:"))
+        layout.addWidget(self.recommended_test_output)
+
+        layout.addWidget(back_button)
+        layout.addStretch()
 
     def show_mediation_variables(self):
         if self.clean_df is None:

@@ -122,12 +122,112 @@ class ReportFormatter:
                 independent_var,
                 dependent_var
             )
+        elif test_id == "moderation":
+            return self.format_moderation(
+                result,
+                independent_var,
+                dependent_var
+            )
 
         else:
             return (
                 f"Formatowanie testu „{test_id}” "
                 "zostanie dodane później."
             )
+
+    def format_moderation(
+            self,
+            result,
+            independent_var=None,
+            dependent_var=None,
+    ):
+        coefficient_sections = []
+
+        for coefficient in result["wspolczynniki"]:
+            coefficient_sections.append(
+                f"""
+    Zmienna:
+    {coefficient['zmienna']}
+
+    B = {coefficient['wspolczynnik']:.4f}
+    SE = {coefficient['blad_standardowy']:.4f}
+    t = {coefficient['statystyka_t']:.4f}
+    p-value = {coefficient['p_value']:.4f}
+
+    95% CI:
+    [
+    {coefficient['ci_95_lower']:.4f},
+    {coefficient['ci_95_upper']:.4f}
+    ]
+    """.strip()
+            )
+
+        coefficients_text = "\n\n".join(
+            coefficient_sections
+        )
+
+        simple_slopes = result["simple_slopes"]
+
+        simple_slopes_text = f"""
+    Niski poziom moderatora:
+    W = {simple_slopes['niski']['wartosc_moderatora']:.4f}
+    Nachylenie X = {simple_slopes['niski']['nachylenie_X']:.4f}
+
+    Średni poziom moderatora:
+    W = {simple_slopes['sredni']['wartosc_moderatora']:.4f}
+    Nachylenie X = {simple_slopes['sredni']['nachylenie_X']:.4f}
+
+    Wysoki poziom moderatora:
+    W = {simple_slopes['wysoki']['wartosc_moderatora']:.4f}
+    Nachylenie X = {simple_slopes['wysoki']['nachylenie_X']:.4f}
+    """.strip()
+
+        return f"""
+    ========================================
+    ANALIZA MODERACJI
+    ========================================
+
+    MODEL:
+    {result['zmienna_niezalezna']}
+    × {result['moderator']}
+    → {result['zmienna_zalezna']}
+
+    LICZBA OBSERWACJI:
+    {result['liczba_obserwacji']}
+
+    DOPASOWANIE MODELU:
+    R² = {result['r_squared']:.4f}
+    Skorygowane R² = {result['adjusted_r_squared']:.4f}
+
+    TEST CAŁEGO MODELU:
+    F = {result['statystyka_F']:.4f}
+    df modelu = {result['df_model']:.0f}
+    df reszt = {result['df_residual']:.0f}
+    p-value = {result['p_value_modelu']:.4f}
+
+    KRYTERIA INFORMACYJNE:
+    AIC = {result['aic']:.4f}
+    BIC = {result['bic']:.4f}
+
+    WSPÓŁCZYNNIKI:
+    {coefficients_text}
+
+    INTERAKCJA:
+    B = {result['interakcja_wspolczynnik']:.4f}
+    p-value = {result['interakcja_p_value']:.4f}
+
+    PROSTE NACHYLENIA:
+    {simple_slopes_text}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+
+    UWAGA:
+    Istotna interakcja wskazuje, że związek X z Y
+    zmienia się w zależności od poziomu moderatora.
+    Nie stanowi to samo w sobie dowodu przyczynowości.
+    ========================================
+    """.strip()
 
     def format_mediation(
             self,
