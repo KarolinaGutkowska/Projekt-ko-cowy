@@ -256,9 +256,7 @@ class MainWindow(QWidget):
         )
 
         mediation_button.clicked.connect(
-            lambda: self.show_analysis_not_ready(
-                "Analiza mediacji"
-            )
+            self.show_mediation_variables
         )
 
         moderation_button.clicked.connect(
@@ -289,6 +287,170 @@ class MainWindow(QWidget):
             f"{analysis_name} zostanie dodana "
             "w następnym etapie."
         )
+
+    def show_mediation_variables(self):
+        if self.clean_df is None:
+            QMessageBox.warning(
+                self,
+                "Brak danych",
+                "Najpierw wczytaj plik."
+            )
+            return
+
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Analiza mediacji")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        description = QLabel(
+            "Wybierz zmienną niezależną X, mediator M oraz "
+            "zmienną zależną Y. Wszystkie zmienne muszą być ilościowe."
+        )
+        description.setWordWrap(True)
+
+        numeric_columns, _ = (
+            self.get_numeric_and_categorical_columns()
+        )
+
+        self.mediation_x_combo = QComboBox()
+        self.mediation_m_combo = QComboBox()
+        self.mediation_y_combo = QComboBox()
+
+        self.mediation_x_combo.addItems(numeric_columns)
+        self.mediation_m_combo.addItems(numeric_columns)
+        self.mediation_y_combo.addItems(numeric_columns)
+
+        if self.mediation_m_combo.count() > 1:
+            self.mediation_m_combo.setCurrentIndex(1)
+
+        if self.mediation_y_combo.count() > 2:
+            self.mediation_y_combo.setCurrentIndex(2)
+
+        calculate_button = QPushButton(
+            "Oblicz analizę mediacji"
+        )
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            self.calculate_mediation
+        )
+
+        add_to_report_button = QPushButton(
+            "Dodaj do raportu"
+        )
+        add_to_report_button.setMinimumHeight(45)
+        add_to_report_button.clicked.connect(
+            self.add_current_results_to_report
+        )
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(
+            self.show_advanced_relationship_question
+        )
+
+        self.recommended_test_output = QTextEdit()
+        self.recommended_test_output.setReadOnly(True)
+
+        layout.addWidget(title)
+        layout.addWidget(description)
+
+        layout.addWidget(QLabel("Zmienna niezależna X:"))
+        layout.addWidget(self.mediation_x_combo)
+
+        layout.addWidget(QLabel("Mediator M:"))
+        layout.addWidget(self.mediation_m_combo)
+
+        layout.addWidget(QLabel("Zmienna zależna Y:"))
+        layout.addWidget(self.mediation_y_combo)
+
+        layout.addWidget(calculate_button)
+        layout.addWidget(add_to_report_button)
+
+        layout.addWidget(QLabel("Wyniki:"))
+        layout.addWidget(self.recommended_test_output)
+
+        layout.addWidget(back_button)
+        layout.addStretch()
+
+    def calculate_mediation(self):
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
+
+            independent_variable = (
+                self.mediation_x_combo.currentText()
+            )
+
+            mediator_variable = (
+                self.mediation_m_combo.currentText()
+            )
+
+            dependent_variable = (
+                self.mediation_y_combo.currentText()
+            )
+
+            selected_variables = {
+                independent_variable,
+                mediator_variable,
+                dependent_variable,
+            }
+
+            if "" in selected_variables:
+                QMessageBox.warning(
+                    self,
+                    "Brak zmiennych",
+                    "Wybierz wszystkie trzy zmienne."
+                )
+                return
+
+            if len(selected_variables) != 3:
+                QMessageBox.warning(
+                    self,
+                    "Nieprawidłowy wybór",
+                    "Zmienna X, mediator M i zmienna Y "
+                    "muszą być różnymi kolumnami."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+            formatter = ReportFormatter()
+
+            result = stats_engine.run_test(
+                test_id="mediation",
+                dataframe=self.clean_df,
+                independent_var=independent_variable,
+                dependent_var=dependent_variable,
+                variables=[mediator_variable],
+            )
+
+            text = formatter.format(
+                test_id="mediation",
+                result=result,
+                independent_var=independent_variable,
+                dependent_var=dependent_variable,
+            )
+
+            self.current_analysis_result = text
+            self.current_analysis_name = "Analiza mediacji"
+
+            self.recommended_test_output.setText(text)
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd analizy mediacji",
+                str(error)
+            )
 
     def show_logistic_regression_variables(self):
         if self.clean_df is None:

@@ -116,11 +116,102 @@ class ReportFormatter:
                 dependent_var
             )
 
+        elif test_id == "mediation":
+            return self.format_mediation(
+                result,
+                independent_var,
+                dependent_var
+            )
+
         else:
             return (
                 f"Formatowanie testu „{test_id}” "
                 "zostanie dodane później."
             )
+
+    def format_mediation(
+            self,
+            result,
+            independent_var=None,
+            dependent_var=None,
+    ):
+        if result["indirect_effect_significant"]:
+            indirect_conclusion = (
+                "Efekt pośredni jest istotny — przedział "
+                "ufności nie obejmuje zera."
+            )
+        else:
+            indirect_conclusion = (
+                "Efekt pośredni nie jest istotny — przedział "
+                "ufności obejmuje zero."
+            )
+
+        return f"""
+    ========================================
+    ANALIZA MEDIACJI
+    ========================================
+
+    MODEL:
+    {result['zmienna_niezalezna']}
+    → {result['mediator']}
+    → {result['zmienna_zalezna']}
+
+    LICZBA OBSERWACJI:
+    {result['liczba_obserwacji']}
+
+    ŚCIEŻKA a:
+    {result['zmienna_niezalezna']}
+    → {result['mediator']}
+
+    a = {result['path_a']:.4f}
+    p-value = {result['path_a_p_value']:.4f}
+
+    ŚCIEŻKA b:
+    {result['mediator']}
+    → {result['zmienna_zalezna']}
+    z kontrolą zmiennej:
+    {result['zmienna_niezalezna']}
+
+    b = {result['path_b']:.4f}
+    p-value = {result['path_b_p_value']:.4f}
+
+    EFEKT CAŁKOWITY c:
+    c = {result['total_effect_c']:.4f}
+    p-value = {result['total_effect_p_value']:.4f}
+
+    EFEKT BEZPOŚREDNI c′:
+    c′ = {result['direct_effect_c_prime']:.4f}
+    p-value = {result['direct_effect_p_value']:.4f}
+
+    EFEKT POŚREDNI a × b:
+    a × b = {result['indirect_effect_ab']:.4f}
+
+    95% BOOTSTRAP CI:
+    [
+    {result['indirect_ci_95_lower']:.4f},
+    {result['indirect_ci_95_upper']:.4f}
+    ]
+
+    {indirect_conclusion}
+
+    LICZBA POPRAWNYCH PRÓB BOOTSTRAP:
+    {result['bootstrap_samples_valid']}
+
+    DOPASOWANIE MODELI:
+    R² modelu mediatora =
+    {result['r_squared_mediator_model']:.4f}
+
+    R² modelu wyniku =
+    {result['r_squared_outcome_model']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+
+    UWAGA:
+    Wynik analizy mediacji sam w sobie nie dowodzi
+    zależności przyczynowej.
+    ========================================
+    """.strip()
 
     def format_logistic_regression(
             self,

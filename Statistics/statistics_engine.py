@@ -170,11 +170,314 @@ class StatisticsEngine:
                 dependent_variable=dependent_var,
                 independent_variables=variables,
             )
+        if test_id == "mediation":
+            if not variables or len(variables) != 1:
+                raise ValueError(
+                    "Dla analizy mediacji należy przekazać "
+                    "dokładnie jeden mediator."
+                )
+
+            return self.mediation_test(
+                dataframe=dataframe,
+                independent_variable=independent_var,
+                mediator_variable=variables[0],
+                dependent_variable=dependent_var,
+            )
 
         raise ValueError(
             f"Nieznany identyfikator testu: {test_id}"
         )
-    #Regresja logiczna
+    #Mediacje
+    def mediation_test(
+            self,
+            dataframe,
+            independent_variable,
+            mediator_variable,
+            dependent_variable,
+            bootstrap_samples=2000,
+            random_state=42,
+    ):
+        variables = [
+            independent_variable,
+            mediator_variable,
+            dependent_variable,
+        ]
+
+        if len(set(variables)) != 3:
+            raise ValueError(
+                "Zmienna niezależna, mediator i zmienna zależna "
+                "muszą być różnymi kolumnami."
+            )
+
+        missing_columns = [
+            variable
+            for variable in variables
+            if variable not in dataframe.columns
+        ]
+
+        if missing_columns:
+            raise ValueError(
+                "Nie znaleziono kolumn: "
+                + ", ".join(missing_columns)
+            )
+
+        data = dataframe[variables].copy()
+
+        for variable in variables:
+            data[variable] = pd.to_numeric(
+                data[variable],
+                errors="coerce"
+            )
+
+        data = data.dropna()
+
+        if len(data) < 10:
+            raise ValueError(
+                "Analiza mediacji wymaga co najmniej "
+                "10 kompletnych obserwacji."
+            )
+
+        x = data[independent_variable].astype(float)
+        m = data[mediator_variable].astype(float)
+        y = data[dependent_variable].astype(float)
+
+        if x.nunique() < 2:
+            raise ValueError(
+                "Zmienna niezależna nie zawiera wystarczającej "
+                "zmienności."
+            )
+
+        if m.nunique() < 2 or y.nunique() < 2:
+            raise ValueError(
+                "Mediator i zmienna zależna muszą zawierać "
+                "co najmniej dwie różne wartości."
+            )
+
+        # Ścieżka a: X → M
+        model_a_x = sm.add_constant(
+            data[[independent_variable]],
+            has_constant="add"
+        )
+
+        model_a = sm.OLS(
+            m,
+            model_a_x
+        ).fit()
+
+        path_a = float(
+            model_a.params[independent_variable]
+        )
+
+        path_a_p = float(
+            model_a.pvalues[independent_variable]
+        )
+
+        # Efekt całkowity c: X → Y
+        model_c_x = sm.add_constant(
+            data[[independent_variable]],
+            has_constant="add"
+        )
+
+        model_c = sm.OLS(
+            y,
+            model_c_x
+        ).fit()
+
+        total_effect_c = float(
+            model_c.params[independent_variable]
+        )
+
+        total_effect_p = float(
+            model_c.pvalues[independent_variable]
+        )
+
+        # Ścieżki b i c′: X + M → Y
+        model_direct_x = sm.add_constant(
+            data[
+                [
+                    independent_variable,
+                    mediator_variable,
+                ]
+            ],
+            has_constant="add"
+        )
+
+        model_direct = sm.OLS(
+            y,
+            model_direct_x
+        ).fit()
+
+        path_b = float(
+            model_direct.params[mediator_variable]
+        )
+
+        path_b_p = float(
+            model_direct.pvalues[mediator_variable]
+        )
+
+        direct_effect_c_prime = float(
+            model_direct.params[independent_variable]
+        )
+
+        direct_effect_p = float(
+            model_direct.pvalues[independent_variable]
+        )
+
+        indirect_effect = float(
+            path_a * path_b
+        )
+
+        # Bootstrap efektu pośredniego a × b.
+        rng = np.random.default_rng(random_state)
+
+        bootstrap_indirect_effects = []
+
+        for _ in range(bootstrap_samples):
+            sampled_indices = rng.integers(
+                low=0,
+                high=len(data),
+                size=len(data),
+            )
+
+            sample = data.iloc[
+                sampled_indices
+            ].reset_index(drop=True)
+
+            try:
+                sample_m = sample[mediator_variable]
+                sample_y = sample[dependent_variable]
+
+                sample_a_x = sm.add_constant(
+                    sample[[independent_variable]],
+                    has_constant="add"
+                )
+
+                sample_a_model = sm.OLS(
+                    sample_m,
+                    sample_a_x
+                ).fit()
+
+                sample_direct_x = sm.add_constant(
+                    sample[
+                        [
+                            independent_variable,
+                            mediator_variable,
+                        ]
+                    ],
+                    has_constant="add"
+                )
+
+                sample_direct_model = sm.OLS(
+                    sample_y,
+                    sample_direct_x
+                ).fit()
+
+                sample_a = float(
+                    sample_a_model.params[
+                        independent_variable
+                    ]
+                )
+
+                sample_b = float(
+                    sample_direct_model.params[
+                        mediator_variable
+                    ]
+                )
+
+                bootstrap_indirect_effects.append(
+                    sample_a * sample_b
+                )
+
+            except Exception:
+                continue
+
+        if len(bootstrap_indirect_effects) < 100:
+            raise ValueError(
+                "Nie udało się uzyskać wystarczającej liczby "
+                "poprawnych prób bootstrap."
+            )
+
+        bootstrap_values = np.asarray(
+            bootstrap_indirect_effects,
+            dtype=float
+        )
+
+        indirect_ci_lower = float(
+            np.percentile(bootstrap_values, 2.5)
+        )
+
+        indirect_ci_upper = float(
+            np.percentile(bootstrap_values, 97.5)
+        )
+
+        indirect_effect_significant = not (
+                indirect_ci_lower <= 0 <= indirect_ci_upper
+        )
+
+        if indirect_effect_significant:
+            mediation_interpretation = (
+                "Przedział ufności dla efektu pośredniego "
+                "nie obejmuje zera. Wynik wskazuje na "
+                "statystycznie istotny efekt pośredni."
+            )
+        else:
+            mediation_interpretation = (
+                "Przedział ufności dla efektu pośredniego "
+                "obejmuje zero. Nie stwierdzono istotnego "
+                "efektu pośredniego."
+            )
+
+        result = {
+            "test": "mediation",
+            "zmienna_niezalezna": independent_variable,
+            "mediator": mediator_variable,
+            "zmienna_zalezna": dependent_variable,
+            "liczba_obserwacji": int(len(data)),
+            "bootstrap_samples_requested": int(
+                bootstrap_samples
+            ),
+            "bootstrap_samples_valid": int(
+                len(bootstrap_values)
+            ),
+
+            "path_a": path_a,
+            "path_a_p_value": path_a_p,
+
+            "path_b": path_b,
+            "path_b_p_value": path_b_p,
+
+            "total_effect_c": total_effect_c,
+            "total_effect_p_value": total_effect_p,
+
+            "direct_effect_c_prime": direct_effect_c_prime,
+            "direct_effect_p_value": direct_effect_p,
+
+            "indirect_effect_ab": indirect_effect,
+            "indirect_ci_95_lower": indirect_ci_lower,
+            "indirect_ci_95_upper": indirect_ci_upper,
+            "indirect_effect_significant": bool(
+                indirect_effect_significant
+            ),
+
+            "r_squared_mediator_model": float(
+                model_a.rsquared
+            ),
+            "r_squared_outcome_model": float(
+                model_direct.rsquared
+            ),
+
+            "interpretacja": mediation_interpretation,
+        }
+
+        self.report.append(
+            "Wykonano analizę mediacji: "
+            f"{independent_variable} → "
+            f"{mediator_variable} → "
+            f"{dependent_variable}."
+        )
+
+        return result
+    #Regresja logistyczna
     def logistic_regression_test(
             self,
             dataframe,
