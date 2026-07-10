@@ -43,6 +43,19 @@ class StatisticsEngine:
                 numeric_column=dependent_var,
                 group_column=independent_var
             )
+        elif test_id == "kruskal_wallis":
+            return self.kruskal_wallis_test(
+                df,
+                numeric_column=dependent_var,
+                group_column=independent_var
+            )
+
+        elif test_id == "anova":
+            return self.anova_test(
+                df,
+                numeric_column=dependent_var,
+                group_column=independent_var
+            )
         else:
             return None
     #Statystyki opisowe
@@ -109,8 +122,15 @@ class StatisticsEngine:
             )
             return None
 
-        group1 = df[df[group_column] == groups[0]][numeric_column].dropna()
-        group2 = df[df[group_column] == groups[1]][numeric_column].dropna()
+        group1 = pd.to_numeric(
+            df[df[group_column] == groups[0]][numeric_column],
+            errors="coerce"
+        ).dropna()
+
+        group2 = pd.to_numeric(
+            df[df[group_column] == groups[1]][numeric_column],
+            errors="coerce"
+        ).dropna()
 
         statistic, p_value = ttest_ind(group1, group2, equal_var=False)
 
@@ -141,8 +161,15 @@ class StatisticsEngine:
             )
             return None
 
-        group1 = df[df[group_column] == groups[0]][numeric_column].dropna()
-        group2 = df[df[group_column] == groups[1]][numeric_column].dropna()
+        group1 = pd.to_numeric(
+            df[df[group_column] == groups[0]][numeric_column],
+            errors="coerce"
+        ).dropna()
+
+        group2 = pd.to_numeric(
+            df[df[group_column] == groups[1]][numeric_column],
+            errors="coerce"
+        ).dropna()
 
         statistic, p_value = mannwhitneyu(group1, group2, alternative="two-sided")
 

@@ -333,66 +333,104 @@ class MainWindow(QWidget):
             self.show_normality_question_for_compare_groups()
             return
 
-    def show_normality_question_for_compare_groups(self):
+        if (
+                self.compare_dependency == "Niezależne"
+                and self.compare_groups_count == "Więcej niż 2"
+                and self.compare_variable_type == "Nominalna"
+        ):
+            self.show_recommended_test_below(
+                "chi_square",
+                "Test Chi-kwadrat niezależności"
+            )
+            return
+
+        if (
+                self.compare_dependency == "Niezależne"
+                and self.compare_groups_count == "Więcej niż 2"
+                and self.compare_variable_type == "Porządkowa"
+        ):
+            self.show_recommended_test_below(
+                "kruskal_wallis",
+                "Test Kruskala-Wallisa"
+            )
+            return
+
+        if (
+                self.compare_dependency == "Niezależne"
+                and self.compare_groups_count == "Więcej niż 2"
+                and self.compare_variable_type == "Ilościowa"
+        ):
+            self.show_normality_question_for_independent_more_than_two()
+            return
+
+    def show_normality_question_for_independent_more_than_two(self):
         self.clear_analysis_page()
         layout = self.analysis_page.layout()
 
-        title = QLabel("Czy rozkład jest normalny?")
+        title = QLabel("Sprawdzenie normalności rozkładu")
         title.setStyleSheet("""
-            font-size:22px;
-            font-weight:bold;
-            padding:10px;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
         """)
 
         self.compare_normality_variable_combo = QComboBox()
 
-        if self.clean_df is not None:
-            numeric_columns = []
+        numeric_columns, _ = self.get_numeric_and_categorical_columns()
+        self.compare_normality_variable_combo.addItems(numeric_columns)
 
-            for column in self.clean_df.columns:
-                converted = pd.to_numeric(self.clean_df[column], errors="coerce")
-                valid_ratio = converted.notna().sum() / len(converted)
-
-                if valid_ratio >= 0.8:
-                    numeric_columns.append(column)
-
-            self.compare_normality_variable_combo.addItems(numeric_columns)
-
-        normality_button = QPushButton("Oblicz rozkład normalny")
-        normality_button.setMinimumHeight(45)
-        normality_button.clicked.connect(self.calculate_compare_normality)
-
-        yes_button = QPushButton("Tak")
-        no_button = QPushButton("Nie")
-
-        yes_button.setMinimumHeight(50)
-        no_button.setMinimumHeight(50)
-
-        yes_button.clicked.connect(
-            lambda: self.show_recommended_test_below(
-                "t_independent",
-                "Test t-Studenta dla prób niezależnych"
-            )
+        self.compare_normality_button = QPushButton("Oblicz rozkład normalny")
+        self.compare_normality_button.setMinimumHeight(45)
+        self.compare_normality_button.clicked.connect(
+            self.calculate_compare_normality
         )
 
-        no_button.clicked.connect(
-            lambda: self.show_recommended_test_below(
-                "mann_whitney",
-                "Test U Manna-Whitneya"
-            )
-        )
         self.compare_normality_output = QTextEdit()
         self.compare_normality_output.setReadOnly(True)
+        self.compare_normality_output.setMaximumHeight(160)
 
         layout.addWidget(title)
-        layout.addWidget(QLabel("Wybierz zmienną do sprawdzenia normalności:"))
+        layout.addWidget(
+            QLabel("Wybierz zmienną do sprawdzenia normalności:")
+        )
         layout.addWidget(self.compare_normality_variable_combo)
-        layout.addWidget(normality_button)
+        layout.addWidget(self.compare_normality_button)
         layout.addWidget(self.compare_normality_output)
-        layout.addWidget(yes_button)
-        layout.addWidget(no_button)
         layout.addStretch()
+    def show_normality_question_for_compare_groups(self):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
 
+        title = QLabel("Sprawdzenie normalności rozkładu")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        self.compare_normality_variable_combo = QComboBox()
+
+        numeric_columns, _ = self.get_numeric_and_categorical_columns()
+        self.compare_normality_variable_combo.addItems(numeric_columns)
+
+        self.compare_normality_button = QPushButton("Oblicz rozkład normalny")
+        self.compare_normality_button.setMinimumHeight(45)
+        self.compare_normality_button.clicked.connect(
+            self.calculate_compare_normality
+        )
+
+        self.compare_normality_output = QTextEdit()
+        self.compare_normality_output.setReadOnly(True)
+        self.compare_normality_output.setMaximumHeight(160)
+
+        layout.addWidget(title)
+        layout.addWidget(
+            QLabel("Wybierz zmienną do sprawdzenia normalności:")
+        )
+        layout.addWidget(self.compare_normality_variable_combo)
+        layout.addWidget(self.compare_normality_button)
+        layout.addWidget(self.compare_normality_output)
+        layout.addStretch()
     def show_recommended_test_below(self, test_id, display_name):
         layout = self.analysis_page.layout()
 
@@ -413,9 +451,20 @@ class MainWindow(QWidget):
         self.dependent_variable_combo = QComboBox()
 
         if self.clean_df is not None:
-            columns = list(self.clean_df.columns)
-            self.independent_variable_combo.addItems(columns)
-            self.dependent_variable_combo.addItems(columns)
+            numeric_columns, categorical_columns = self.get_numeric_and_categorical_columns()
+
+            if test_id == "chi_square":
+                self.independent_variable_combo.addItems(categorical_columns)
+                self.dependent_variable_combo.addItems(categorical_columns)
+
+            elif test_id in ["mann_whitney", "t_independent", "anova", "kruskal_wallis"]:
+                self.independent_variable_combo.addItems(categorical_columns)
+                self.dependent_variable_combo.addItems(numeric_columns)
+
+            else:
+                columns = list(self.clean_df.columns)
+                self.independent_variable_combo.addItems(columns)
+                self.dependent_variable_combo.addItems(columns)
 
         calculate_test_button = QPushButton("Oblicz statystyki")
         calculate_test_button.setMinimumHeight(45)
@@ -438,46 +487,160 @@ class MainWindow(QWidget):
 
         layout.addWidget(QLabel("Zmienna zależna:"))
         layout.addWidget(self.dependent_variable_combo)
+        normality_button = QPushButton("Sprawdź rozkład normalny dla zmiennej zależnej")
+        normality_button.setMinimumHeight(40)
+        normality_button.clicked.connect(self.check_normality_for_dependent_variable)
+
+        self.normality_result_output = QTextEdit()
+        self.normality_result_output.setReadOnly(True)
+
+        layout.addWidget(normality_button)
+        layout.addWidget(self.normality_result_output)
 
         layout.addWidget(calculate_test_button)
         layout.addWidget(add_test_to_report_button)
         layout.addWidget(QLabel("Wyniki:"))
         layout.addWidget(self.recommended_test_output)
 
+    def check_normality_for_dependent_variable(self):
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
 
+            dependent_var = self.dependent_variable_combo.currentText()
+
+            if dependent_var == "":
+                self.normality_result_output.setText(
+                    "Nie wybrano zmiennej zależnej."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+            result = stats_engine.normality_test(
+                self.clean_df,
+                dependent_var
+            )
+
+            if result is None:
+                self.normality_result_output.setText(
+                    "Nie udało się wykonać testu normalności."
+                )
+                return
+
+            text = "=== TEST NORMALNOŚCI ROZKŁADU ===\n\n"
+            text += f"Zmienna: {result['kolumna']}\n"
+            text += f"Test: {result['test']}\n"
+            text += f"Statystyka W: {result['statystyka_W']:.4f}\n"
+            text += f"p-value: {result['p_value']:.4f}\n\n"
+            text += result["interpretacja"]
+
+            self.normality_result_output.setText(text)
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Błąd normalności",
+                str(e)
+            )
 
     def calculate_compare_normality(self):
         try:
             if self.clean_df is None:
-                self.compare_normality_output.setText("Najpierw wczytaj plik.")
+                self.compare_normality_output.setText(
+                    "Najpierw wczytaj plik."
+                )
                 return
 
             column = self.compare_normality_variable_combo.currentText()
 
-            if column == "":
-                self.compare_normality_output.setText("Brak zmiennych ilościowych.")
+            if not column:
+                self.compare_normality_output.setText(
+                    "Brak zmiennej ilościowej do sprawdzenia."
+                )
                 return
 
             stats_engine = StatisticsEngine()
-            result = stats_engine.normality_test(self.clean_df, column)
+
+            result = stats_engine.normality_test(
+                self.clean_df,
+                column
+            )
 
             if result is None:
-                self.compare_normality_output.setText("Nie udało się wykonać testu normalności.")
+                self.compare_normality_output.setText(
+                    "Nie udało się wykonać testu normalności."
+                )
                 return
+
+            normal_distribution = result["rozkład_normalny"]
 
             text = "=== TEST NORMALNOŚCI ROZKŁADU ===\n\n"
             text += f"Test: {result['test']}\n"
             text += f"Zmienna: {result['kolumna']}\n"
             text += f"Statystyka W: {result['statystyka_W']:.4f}\n"
-            text += f"p-value: {result['p_value']:.4f}\n"
-            text += f"Rozkład normalny: {result['rozkład_normalny']}\n\n"
+            text += f"p-value: {result['p_value']:.4f}\n\n"
             text += result["interpretacja"]
 
+            if normal_distribution:
+                text += "\n\nWniosek: rozkład można uznać za normalny."
+            else:
+                text += "\n\nWniosek: rozkład odbiega od normalnego."
+
             self.compare_normality_output.setText(text)
+            self.compare_normality_button.setEnabled(False)
+
+            if self.compare_groups_count == "Tylko 2":
+                if normal_distribution:
+                    self.show_recommended_test_below(
+                        "t_independent",
+                        "Test t-Studenta dla prób niezależnych"
+                    )
+                else:
+                    self.show_recommended_test_below(
+                        "mann_whitney",
+                        "Test U Manna-Whitneya"
+                    )
+
+            elif self.compare_groups_count == "Więcej niż 2":
+                if normal_distribution:
+                    self.show_recommended_test_below(
+                        "anova",
+                        "Jednoczynnikowa ANOVA"
+                    )
+                else:
+                    self.show_recommended_test_below(
+                        "kruskal_wallis",
+                        "Test Kruskala-Wallisa"
+                    )
 
         except Exception as e:
-            QMessageBox.critical(self, "Błąd", str(e))
+            QMessageBox.critical(
+                self,
+                "Błąd testu normalności",
+                str(e)
+            )
+    def get_numeric_and_categorical_columns(self):
+        numeric_columns = []
+        categorical_columns = []
 
+        if self.clean_df is None:
+            return numeric_columns, categorical_columns
+
+        for column in self.clean_df.columns:
+            converted = pd.to_numeric(self.clean_df[column], errors="coerce")
+            valid_ratio = converted.notna().sum() / len(converted)
+
+            if valid_ratio >= 0.8:
+                numeric_columns.append(column)
+            else:
+                categorical_columns.append(column)
+
+        return numeric_columns, categorical_columns
 
     def show_recommended_test(self, test_name):
         self.clear_analysis_page()
@@ -539,30 +702,46 @@ class MainWindow(QWidget):
         layout.addStretch()
 
     def calculate_recommended_test(self, test_id, display_name):
-        independent_var = self.independent_variable_combo.currentText()
-        dependent_var = self.dependent_variable_combo.currentText()
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
 
-        stats_engine = StatisticsEngine()
-        formatter = ReportFormatter()
+            independent_var = self.independent_variable_combo.currentText()
+            dependent_var = self.dependent_variable_combo.currentText()
 
-        result = stats_engine.run_test(
-            test_id,
-            self.clean_df,
-            independent_var,
-            dependent_var
-        )
+            stats_engine = StatisticsEngine()
+            formatter = ReportFormatter()
 
-        text = formatter.format(
-            test_id,
-            result,
-            independent_var,
-            dependent_var
-        )
+            result = stats_engine.run_test(
+                test_id,
+                self.clean_df,
+                independent_var,
+                dependent_var
+            )
 
-        self.current_analysis_result = text
-        self.current_analysis_name = display_name
+            text = formatter.format(
+                test_id,
+                result,
+                independent_var,
+                dependent_var
+            )
 
-        self.recommended_test_output.setText(text)
+            self.current_analysis_result = text
+            self.current_analysis_name = display_name
+
+            self.recommended_test_output.setText(text)
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Błąd obliczeń",
+                str(e)
+            )
     def show_variable_checkbox_list(self, data_type):
         if self.clean_df is None:
             QMessageBox.warning(

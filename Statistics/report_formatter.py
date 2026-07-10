@@ -17,6 +17,11 @@ class ReportFormatter:
                 independent_var,
                 dependent_var
             )
+        elif test_id == "kruskal_wallis":
+            return self.format_kruskal_wallis(result, independent_var, dependent_var)
+
+        elif test_id == "anova":
+            return self.format_anova(result, independent_var, dependent_var)
 
         else:
             return "Formatowanie tego testu zostanie dodane później."
@@ -42,6 +47,60 @@ INTERPRETACJA:
 {result['interpretacja']}
 ========================================
 """
+
+    def format_kruskal_wallis(self, result, independent_var, dependent_var):
+        return f"""
+    ========================================
+    TEST KRUSKALA-WALLISA
+    ========================================
+
+    ZMIENNA GRUPUJĄCA:
+    {independent_var}
+
+    ZMIENNA ZALEŻNA:
+    {dependent_var}
+
+    LICZBA GRUP:
+    {result['liczba_grup']}
+
+    GRUPY:
+    {result['grupy']}
+
+    WYNIKI TESTU:
+    H = {result['statystyka_H']:.4f}
+    p-value = {result['p_value']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+    ========================================
+    """
+
+    def format_anova(self, result, independent_var, dependent_var):
+        return f"""
+    ========================================
+    JEDNOCZYNNIKOWA ANOVA
+    ========================================
+
+    ZMIENNA GRUPUJĄCA:
+    {independent_var}
+
+    ZMIENNA ZALEŻNA:
+    {dependent_var}
+
+    LICZBA GRUP:
+    {result['liczba_grup']}
+
+    GRUPY:
+    {result['grupy']}
+
+    WYNIKI TESTU:
+    F = {result['statystyka_F']:.4f}
+    p-value = {result['p_value']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+    ========================================
+    """
 
     def format_mann_whitney(self, result, independent_var, dependent_var):
         return f"""
