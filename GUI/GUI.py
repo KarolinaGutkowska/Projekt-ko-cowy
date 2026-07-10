@@ -1,4 +1,5 @@
 import pandas as pd
+import html
 
 from PyQt6.QtWidgets import (
     QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel,
@@ -2935,8 +2936,6 @@ class MainWindow(QWidget):
 
         self.test_page.setLayout(layout)
 
-
-
     def refresh_report_preview(self):
         if not hasattr(self, "report_preview"):
             return
@@ -2949,12 +2948,73 @@ class MainWindow(QWidget):
             )
             return
 
-        report_text = "\n\n".join(
+        report_content = "<hr>".join(
             self.report_sections
         )
 
-        self.report_preview.setPlainText(report_text)
+        report_html = f"""
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    font-size: 13px;
+                    padding: 12px;
+                }}
 
+                h2 {{
+                    margin-bottom: 4px;
+                }}
+
+                h3 {{
+                    margin-top: 0;
+                    margin-bottom: 16px;
+                }}
+
+                .report-section {{
+                    margin-bottom: 24px;
+                }}
+
+                table.report-table {{
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin-top: 10px;
+                    margin-bottom: 18px;
+                }}
+
+                table.report-table th {{
+                    font-weight: bold;
+                    padding: 8px;
+                    border: 1px solid #777;
+                    text-align: center;
+                }}
+
+                table.report-table td {{
+                    padding: 7px;
+                    border: 1px solid #777;
+                    text-align: center;
+                }}
+
+                pre {{
+                    white-space: pre-wrap;
+                    font-family: Consolas, monospace;
+                    font-size: 12px;
+                }}
+
+                hr {{
+                    margin-top: 24px;
+                    margin-bottom: 24px;
+                }}
+            </style>
+        </head>
+
+        <body>
+            {report_content}
+        </body>
+        </html>
+        """
+
+        self.report_preview.setHtml(report_html)
     def build_reports_page(self):
         layout = QVBoxLayout()
 
@@ -3138,64 +3198,64 @@ class MainWindow(QWidget):
             )
 
     def add_current_results_to_report(self):
-        try:
-            if self.current_analysis_result is None:
-                QMessageBox.warning(
-                    self,
-                    "Brak wyników",
-                    "Najpierw wykonaj analizę."
-                )
-                return
-
-            analysis_name = (
-                    self.current_analysis_name
-                    or "Analiza statystyczna"
-            )
-
-            if hasattr(self.current_analysis_result, "to_string"):
-                result_text = self.current_analysis_result.to_string(
-                    index=False
-                )
-            else:
-                result_text = str(
-                    self.current_analysis_result
-                )
-
-            section_number = len(self.report_sections) + 1
-
-            report_section = (
-                f"ANALIZA {section_number}\n"
-                f"{analysis_name}\n"
-                f"{'=' * 60}\n\n"
-                f"{result_text}"
-            )
-
-            self.report_sections.append(report_section)
-
-            with open(
-                    self.statistics_report_path,
-                    "a",
-                    encoding="utf-8"
-            ) as file:
-                file.write("\n\n")
-                file.write(report_section)
-                file.write("\n")
-
-            self.refresh_report_preview()
-
-            QMessageBox.information(
+        if self.current_analysis_result is None:
+            QMessageBox.warning(
                 self,
-                "Dodano do raportu",
-                f"Analiza „{analysis_name}” została dodana "
-                "do raportu."
+                "Brak wyników",
+                "Najpierw wykonaj analizę."
+            )
+            return
+
+        analysis_name = (
+                self.current_analysis_name
+                or "Analiza statystyczna"
+        )
+
+        section_number = len(self.report_sections) + 1
+
+        # Wynik tabelaryczny, np. statystyki opisowe.
+        if isinstance(self.current_analysis_result, pd.DataFrame):
+            result = self.current_analysis_result.copy()
+
+            table_html = result.to_html(
+                index=False,
+                border=0,
+                justify="center",
+                classes="report-table",
+                na_rep="—",
             )
 
-        except Exception as error:
-            QMessageBox.critical(
-                self,
-                "Błąd zapisu do raportu",
-                str(error)
+            report_section = f"""
+            <div class="report-section">
+                <h2>Analiza {section_number}</h2>
+                <h3>{html.escape(analysis_name)}</h3>
+                {table_html}
+            </div>
+            """
+
+        # Wynik tekstowy, np. regresja, korelacja lub test.
+        else:
+            result_text = html.escape(
+                str(self.current_analysis_result)
             )
+
+            report_section = f"""
+            <div class="report-section">
+                <h2>Analiza {section_number}</h2>
+                <h3>{html.escape(analysis_name)}</h3>
+                <pre>{result_text}</pre>
+            </div>
+            """
+
+        self.report_sections.append(report_section)
+
+        self.refresh_report_preview()
+
+        QMessageBox.information(
+            self,
+            "Dodano do raportu",
+            f"Analiza „{analysis_name}” została dodana do raportu."
+        )
     def choose_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
