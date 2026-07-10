@@ -9,6 +9,17 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QAbstractTableModel, Qt
 from PyQt6.QtCore import QTimer
+from PyQt6.QtPrintSupport import QPrinter
+from PyQt6.QtGui import QPageSize
+
+from PyQt6.QtCore import QMarginsF
+from PyQt6.QtGui import (
+    QTextDocument,
+    QPageSize,
+    QPageLayout,
+    QFont,
+)
+from PyQt6.QtPrintSupport import QPrinter
 
 from HUBA.huba import HUBA
 from Statistics.statistics_engine import StatisticsEngine
@@ -2958,17 +2969,25 @@ class MainWindow(QWidget):
             <style>
                 body {{
                     font-family: Arial, sans-serif;
-                    font-size: 13px;
-                    padding: 12px;
+                    font-size: 10pt;
+                    margin: 0;
+                    padding: 8px;
+                }}
+
+                h1 {{
+                    font-size: 18pt;
+                    margin-bottom: 12px;
                 }}
 
                 h2 {{
+                    font-size: 15pt;
                     margin-bottom: 4px;
                 }}
 
                 h3 {{
+                    font-size: 12pt;
                     margin-top: 0;
-                    margin-bottom: 16px;
+                    margin-bottom: 14px;
                 }}
 
                 .report-section {{
@@ -2980,17 +2999,18 @@ class MainWindow(QWidget):
                     width: 100%;
                     margin-top: 10px;
                     margin-bottom: 18px;
+                    font-size: 9pt;
                 }}
 
                 table.report-table th {{
                     font-weight: bold;
-                    padding: 8px;
-                    border: 1px solid #777;
+                    padding: 5px;
+                    border: 1px solid #555;
                     text-align: center;
                 }}
 
                 table.report-table td {{
-                    padding: 7px;
+                    padding: 5px;
                     border: 1px solid #777;
                     text-align: center;
                 }}
@@ -2998,23 +3018,24 @@ class MainWindow(QWidget):
                 pre {{
                     white-space: pre-wrap;
                     font-family: Consolas, monospace;
-                    font-size: 12px;
+                    font-size: 9pt;
                 }}
 
                 hr {{
-                    margin-top: 24px;
-                    margin-bottom: 24px;
+                    margin-top: 20px;
+                    margin-bottom: 20px;
                 }}
             </style>
         </head>
 
         <body>
+            <h1>Raport statystyczny</h1>
             {report_content}
         </body>
         </html>
         """
-
         self.report_preview.setHtml(report_html)
+
     def build_reports_page(self):
         layout = QVBoxLayout()
 
@@ -3033,17 +3054,109 @@ class MainWindow(QWidget):
         )
         self.report_preview.setMinimumHeight(450)
 
-        refresh_button = QPushButton("Odśwież podgląd")
+        refresh_button = QPushButton(
+            "Odśwież podgląd"
+        )
         refresh_button.setMinimumHeight(40)
         refresh_button.clicked.connect(
             self.refresh_report_preview
         )
 
+        export_pdf_button = QPushButton(
+            "Zapisz raport jako PDF"
+        )
+        export_pdf_button.setMinimumHeight(45)
+        export_pdf_button.clicked.connect(
+            self.export_report_to_pdf
+        )
+
         layout.addWidget(title)
         layout.addWidget(self.report_preview)
         layout.addWidget(refresh_button)
+        layout.addWidget(export_pdf_button)
 
         self.reports_page.setLayout(layout)
+
+    def export_report_to_pdf(self):
+        try:
+            if not self.report_sections:
+                QMessageBox.warning(
+                    self,
+                    "Raport jest pusty",
+                    "Najpierw dodaj przynajmniej jeden wynik "
+                    "do raportu."
+                )
+                return
+
+            self.refresh_report_preview()
+
+            file_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Zapisz raport jako PDF",
+                "raport_statystyczny.pdf",
+                "Pliki PDF (*.pdf)"
+            )
+
+            if not file_path:
+                return
+
+            if not file_path.lower().endswith(".pdf"):
+                file_path += ".pdf"
+
+            # ScreenResolution zapobiega bardzo małemu tekstowi.
+            printer = QPrinter(
+                QPrinter.PrinterMode.ScreenResolution
+            )
+
+            printer.setOutputFormat(
+                QPrinter.OutputFormat.PdfFormat
+            )
+            printer.setOutputFileName(file_path)
+
+            page_layout = QPageLayout(
+                QPageSize(QPageSize.PageSizeId.A4),
+                QPageLayout.Orientation.Portrait,
+                QMarginsF(15, 15, 15, 15),
+                QPageLayout.Unit.Millimeter,
+            )
+
+            printer.setPageLayout(page_layout)
+
+            document = QTextDocument()
+
+            default_font = QFont("Arial")
+            default_font.setPointSize(10)
+            document.setDefaultFont(default_font)
+
+            # Pobiera pełny sformatowany raport z podglądu.
+            document.setHtml(
+                self.report_preview.toHtml()
+            )
+
+            # Dopasowuje szerokość dokumentu do obszaru strony A4.
+            page_rectangle = printer.pageRect(
+                QPrinter.Unit.Point
+            )
+            document.setPageSize(
+                page_rectangle.size()
+            )
+
+            document.print(printer)
+
+            QMessageBox.information(
+                self,
+                "Raport zapisany",
+                "Raport został poprawnie zapisany:\n\n"
+                f"{file_path}"
+            )
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd zapisu PDF",
+                "Nie udało się zapisać raportu.\n\n"
+                f"{error}"
+            )
 
     def show_multiple_dependent_quantitative_normality(self):
         self.clear_analysis_page()
