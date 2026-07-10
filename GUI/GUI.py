@@ -3234,11 +3234,7 @@ class MainWindow(QWidget):
 
 
 
-            self.reports_output.setText(
-                f"Raport HUBA: {self.huba_pdf_path}\n"
-                f"Raport statystyczny: {self.statistics_report_path}\n"
-                f"Oczyszczony plik: {self.clean_file_path}"
-            )
+
 
         except Exception as e:
             QMessageBox.critical(self, "Błąd", str(e))
