@@ -51,6 +51,10 @@ class MainWindow(QWidget):
         self.clean_df = None
         self.results = None
 
+        self.current_analysis_result = None
+        self.current_analysis_name = None
+        self.report_sections = []
+
         self.test_selector = TestSelector()
 
         self.huba_pdf_path = "reports/huba_report.pdf"
@@ -65,10 +69,20 @@ class MainWindow(QWidget):
         self.build_sidebar()
         self.build_pages()
 
+        self.content.currentChanged.connect(
+            self.handle_page_changed
+        )
+
         main_layout.addLayout(self.sidebar, 1)
         main_layout.addWidget(self.content, 5)
 
         self.setLayout(main_layout)
+
+    def handle_page_changed(self, index):
+        current_page = self.content.widget(index)
+
+        if current_page is self.reports_page:
+            self.refresh_report_preview()
 
     def build_sidebar(self):
         title = QLabel("StatAnalyzer")
@@ -78,8 +92,7 @@ class MainWindow(QWidget):
         buttons = [
             ("Dane", 0),
             ("Analiza", 1),
-            ("Wyniki", 2),
-            ("Raporty", 3),
+            ("Raporty", 2),
         ]
 
         for name, index in buttons:
@@ -93,18 +106,16 @@ class MainWindow(QWidget):
     def build_pages(self):
         self.data_page = QWidget()
         self.analysis_page = QWidget()
-        self.results_page = QWidget()
         self.reports_page = QWidget()
 
         self.build_data_page()
         self.build_analysis_page()
-        self.build_results_page()
         self.build_reports_page()
 
         self.content.addWidget(self.data_page)
         self.content.addWidget(self.analysis_page)
-        self.content.addWidget(self.results_page)
         self.content.addWidget(self.reports_page)
+
 
     def build_data_page(self):
         self.file_label = QLabel("Nie wybrano pliku")
@@ -2912,25 +2923,53 @@ class MainWindow(QWidget):
 
         self.test_page.setLayout(layout)
 
-    def build_results_page(self):
-        layout = QVBoxLayout()
 
-        self.results_output = QTextEdit()
-        self.results_output.setReadOnly(True)
 
-        layout.addWidget(QLabel("Wyniki"))
-        layout.addWidget(self.results_output)
+    def refresh_report_preview(self):
+        if not hasattr(self, "report_preview"):
+            return
 
-        self.results_page.setLayout(layout)
+        if not self.report_sections:
+            self.report_preview.clear()
+            self.report_preview.setPlaceholderText(
+                "Raport jest pusty.\n"
+                "Wykonaj analizę i kliknij „Dodaj do raportu”."
+            )
+            return
+
+        report_text = "\n\n".join(
+            self.report_sections
+        )
+
+        self.report_preview.setPlainText(report_text)
 
     def build_reports_page(self):
         layout = QVBoxLayout()
 
-        self.reports_output = QTextEdit()
-        self.reports_output.setReadOnly(True)
+        title = QLabel("Podgląd raportu")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
 
-        layout.addWidget(QLabel("Raporty"))
-        layout.addWidget(self.reports_output)
+        self.report_preview = QTextEdit()
+        self.report_preview.setReadOnly(True)
+        self.report_preview.setPlaceholderText(
+            "Raport jest pusty.\n"
+            "Wykonaj analizę i kliknij „Dodaj do raportu”."
+        )
+        self.report_preview.setMinimumHeight(450)
+
+        refresh_button = QPushButton("Odśwież podgląd")
+        refresh_button.setMinimumHeight(40)
+        refresh_button.clicked.connect(
+            self.refresh_report_preview
+        )
+
+        layout.addWidget(title)
+        layout.addWidget(self.report_preview)
+        layout.addWidget(refresh_button)
 
         self.reports_page.setLayout(layout)
 
@@ -3088,7 +3127,7 @@ class MainWindow(QWidget):
 
     def add_current_results_to_report(self):
         try:
-            if not hasattr(self, "current_analysis_result"):
+            if self.current_analysis_result is None:
                 QMessageBox.warning(
                     self,
                     "Brak wyników",
@@ -3096,29 +3135,54 @@ class MainWindow(QWidget):
                 )
                 return
 
-            with open(self.statistics_report_path, "a", encoding="utf-8") as file:
-                file.write("\n\n=== DODANE WYNIKI ANALIZY ===\n")
-                file.write(f"{self.current_analysis_name}\n")
-                file.write("-------------------\n")
+            analysis_name = (
+                    self.current_analysis_name
+                    or "Analiza statystyczna"
+            )
 
-                if hasattr(self.current_analysis_result, "to_string"):
-                    file.write(self.current_analysis_result.to_string(index=False))
-                else:
-                    file.write(str(self.current_analysis_result))
+            if hasattr(self.current_analysis_result, "to_string"):
+                result_text = self.current_analysis_result.to_string(
+                    index=False
+                )
+            else:
+                result_text = str(
+                    self.current_analysis_result
+                )
 
+            section_number = len(self.report_sections) + 1
+
+            report_section = (
+                f"ANALIZA {section_number}\n"
+                f"{analysis_name}\n"
+                f"{'=' * 60}\n\n"
+                f"{result_text}"
+            )
+
+            self.report_sections.append(report_section)
+
+            with open(
+                    self.statistics_report_path,
+                    "a",
+                    encoding="utf-8"
+            ) as file:
+                file.write("\n\n")
+                file.write(report_section)
                 file.write("\n")
+
+            self.refresh_report_preview()
 
             QMessageBox.information(
                 self,
-                "Zapisano",
-                f"Wyniki dodano do raportu: {self.statistics_report_path}"
+                "Dodano do raportu",
+                f"Analiza „{analysis_name}” została dodana "
+                "do raportu."
             )
 
-        except Exception as e:
+        except Exception as error:
             QMessageBox.critical(
                 self,
                 "Błąd zapisu do raportu",
-                str(e)
+                str(error)
             )
     def choose_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -3168,10 +3232,7 @@ class MainWindow(QWidget):
                 f"Raport statystyczny: {self.statistics_report_path}"
             )
 
-            self.results_output.setText(
-                "Dane zostały wczytane i oczyszczone.\n"
-                "Możesz przejść do modułu Analiza lub Rozkład normalny."
-            )
+
 
             self.reports_output.setText(
                 f"Raport HUBA: {self.huba_pdf_path}\n"
@@ -3234,7 +3295,7 @@ class MainWindow(QWidget):
                 result = "Nieznany typ analizy."
 
             self.analysis_output.setText(str(result))
-            self.results_output.setText(str(result))
+
 
         except Exception as e:
             QMessageBox.critical(self, "Błąd", str(e))
@@ -3255,7 +3316,7 @@ class MainWindow(QWidget):
             result = stats_engine.normality_test(self.clean_df, column)
 
             self.normality_output.setText(str(result))
-            self.results_output.setText(str(result))
+
 
         except Exception as e:
             QMessageBox.critical(self, "Błąd", str(e))
