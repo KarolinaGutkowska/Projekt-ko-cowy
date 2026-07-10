@@ -74,6 +74,16 @@ class ReportFormatter:
                 dependent_var
             )
 
+        elif test_id == "friedman":
+            return self.format_friedman(result)
+
+        elif test_id == "cochran_q":
+            return self.format_cochran_q(
+                result,
+                independent_var,
+                dependent_var
+            )
+
 
         else:
             return (
@@ -172,6 +182,41 @@ INTERPRETACJA:
 
     WYNIKI TESTU:
     Statystyka = {result['statystyka']:.4f}
+    p-value = {result['p_value']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+    ========================================
+    """.strip()
+
+    def format_friedman(
+            self,
+            result,
+            independent_var=None,
+            dependent_var=None,
+    ):
+        measurements = "\n".join(
+            f"- {measurement}"
+            for measurement in result["pomiary"]
+        )
+
+        return f"""
+    ========================================
+    TEST FRIEDMANA
+    ========================================
+
+    PORÓWNYWANE POMIARY:
+    {measurements}
+
+    LICZBA POMIARÓW:
+    {result['liczba_pomiarow']}
+
+    LICZBA KOMPLETNYCH PRZYPADKÓW:
+    {result['liczba_kompletnych_przypadkow']}
+
+    WYNIKI TESTU:
+    χ² = {result['statystyka_chi2']:.4f}
+    df = {result['degrees_of_freedom']}
     p-value = {result['p_value']:.4f}
 
     INTERPRETACJA:

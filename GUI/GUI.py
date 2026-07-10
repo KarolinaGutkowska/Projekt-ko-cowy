@@ -340,10 +340,17 @@ class MainWindow(QWidget):
                 )
                 return
 
-            self.show_dependent_test(
-                test_id,
-                display_name
-            )
+            if self.compare_groups_count == 2:
+                self.show_dependent_test(
+                    test_id,
+                    display_name
+                )
+            else:
+                self.show_multiple_dependent_test(
+                    test_id,
+                    display_name
+                )
+
             return
 
         if self.compare_dependency != "independent":
@@ -1089,6 +1096,145 @@ class MainWindow(QWidget):
             QMessageBox.critical(
                 self,
                 "Błąd doboru testu",
+                str(error)
+            )
+
+    def show_multiple_dependent_test(
+            self,
+            test_id,
+            display_name,
+    ):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Rekomendowany test:")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        test_label = QLabel(display_name)
+        test_label.setStyleSheet("""
+            font-size: 20px;
+            padding: 10px;
+        """)
+        test_label.setWordWrap(True)
+
+        instruction = QLabel(
+            "Wybierz co najmniej trzy kolumny odpowiadające "
+            "kolejnym pomiarom tych samych osób."
+        )
+        instruction.setWordWrap(True)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+
+        scroll_content = QWidget()
+        checkbox_layout = QVBoxLayout()
+
+        self.multiple_dependent_checkboxes = []
+
+        numeric_columns, _ = (
+            self.get_numeric_and_categorical_columns()
+        )
+
+        for column in numeric_columns:
+            checkbox = QCheckBox(str(column))
+            self.multiple_dependent_checkboxes.append(checkbox)
+            checkbox_layout.addWidget(checkbox)
+
+        checkbox_layout.addStretch()
+        scroll_content.setLayout(checkbox_layout)
+        scroll_area.setWidget(scroll_content)
+
+        calculate_button = QPushButton("Oblicz statystyki")
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            lambda: self.calculate_multiple_dependent_test(
+                test_id,
+                display_name
+            )
+        )
+
+        add_to_report_button = QPushButton("Dodaj do raportu")
+        add_to_report_button.setMinimumHeight(45)
+        add_to_report_button.clicked.connect(
+            self.add_current_results_to_report
+        )
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(
+            self.show_compare_groups_question_1
+        )
+
+        self.recommended_test_output = QTextEdit()
+        self.recommended_test_output.setReadOnly(True)
+
+        layout.addWidget(title)
+        layout.addWidget(test_label)
+        layout.addWidget(instruction)
+        layout.addWidget(scroll_area)
+        layout.addWidget(calculate_button)
+        layout.addWidget(add_to_report_button)
+        layout.addWidget(QLabel("Wyniki:"))
+        layout.addWidget(self.recommended_test_output)
+        layout.addWidget(back_button)
+
+    def calculate_multiple_dependent_test(
+            self,
+            test_id,
+            display_name,
+    ):
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
+
+            selected_variables = [
+                checkbox.text()
+                for checkbox in self.multiple_dependent_checkboxes
+                if checkbox.isChecked()
+            ]
+
+            if len(selected_variables) < 3:
+                QMessageBox.warning(
+                    self,
+                    "Za mało pomiarów",
+                    "Wybierz co najmniej trzy pomiary."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+            formatter = ReportFormatter()
+
+            result = stats_engine.run_test(
+                test_id=test_id,
+                dataframe=self.clean_df,
+                variables=selected_variables,
+            )
+
+            text = formatter.format(
+                test_id,
+                result,
+                None,
+                None,
+            )
+
+            self.current_analysis_result = text
+            self.current_analysis_name = display_name
+
+            self.recommended_test_output.setText(text)
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd obliczeń",
                 str(error)
             )
 

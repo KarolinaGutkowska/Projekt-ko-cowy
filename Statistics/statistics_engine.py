@@ -10,9 +10,13 @@ from scipy.stats import (
     shapiro,
     ttest_ind,
     wilcoxon,
-    ttest_rel
+    ttest_rel,
+    friedmanchisquare
 )
-
+from statsmodels.stats.contingency_tables import (
+    cochrans_q,
+    mcnemar,
+)
 from statsmodels.stats.oneway import anova_oneway
 
 class StatisticsEngine:
@@ -38,8 +42,9 @@ class StatisticsEngine:
             self,
             test_id,
             dataframe,
-            independent_var,
-            dependent_var
+            independent_var=None,
+            dependent_var=None,
+            variables=None,
     ):
         if test_id == "chi_square":
             return self.chi_square_test(
@@ -108,6 +113,18 @@ class StatisticsEngine:
                 dataframe,
                 independent_var,
                 dependent_var
+            )
+
+        if test_id == "friedman":
+            return self.friedman_test(
+                dataframe,
+                variables
+            )
+
+        if test_id == "cochran_q":
+            return self.cochran_q_test(
+                dataframe,
+                variables
             )
 
         raise ValueError(
@@ -198,6 +215,88 @@ class StatisticsEngine:
             f"Wykonano test Shapiro-Wilka w grupach dla "
             f"zmiennej '{dependent_variable}' względem "
             f"zmiennej grupującej '{grouping_variable}'."
+        )
+
+        return result
+
+    #Test Cochran
+    def cochran_q_test(
+            self,
+            dataframe,
+            variables,
+    ):
+        if not isinstance(variables, (list, tuple)):
+            raise TypeError(
+                "Lista pomiarów testu Q Cochrana musi być listą lub krotką."
+            )
+
+        if len(variables) < 3:
+            raise ValueError(
+                "Test Q Cochrana wymaga co najmniej trzech pomiarów."
+            )
+
+        missing_columns = [
+            variable
+            for variable in variables
+            if variable not in dataframe.columns
+        ]
+
+        if missing_columns:
+            raise ValueError(
+                "Nie znaleziono kolumn: "
+                + ", ".join(missing_columns)
+            )
+
+        data = dataframe[list(variables)].copy()
+        data = data.dropna()
+
+        if len(data) < 2:
+            raise ValueError(
+                "Test Q Cochrana wymaga co najmniej dwóch "
+                "kompletnych zestawów obserwacji."
+            )
+
+        unique_values = pd.unique(data.to_numpy().ravel())
+
+        if len(unique_values) != 2:
+            raise ValueError(
+                "Test Q Cochrana wymaga danych binarnych, "
+                "czyli dokładnie dwóch kategorii."
+            )
+
+        category_0 = unique_values[0]
+        category_1 = unique_values[1]
+
+        binary_data = data.replace({
+            category_0: 0,
+            category_1: 1,
+        }).astype(int)
+
+        test_result = cochrans_q(
+            binary_data.to_numpy()
+        )
+
+        statistic = float(test_result.statistic)
+        p_value = float(test_result.pvalue)
+
+        result = {
+            "test": "cochran_q",
+            "pomiary": list(variables),
+            "liczba_pomiarow": int(len(variables)),
+            "liczba_kompletnych_przypadkow": int(len(binary_data)),
+            "kategoria_0": str(category_0),
+            "kategoria_1": str(category_1),
+            "statystyka_Q": statistic,
+            "degrees_of_freedom": int(len(variables) - 1),
+            "p_value": p_value,
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
+        }
+
+        self.report.append(
+            "Wykonano test Q Cochrana dla pomiarów: "
+            + ", ".join(variables)
+            + "."
         )
 
         return result
@@ -443,6 +542,78 @@ class StatisticsEngine:
         self.report.append(
             f"Wykonano test Wilcoxona dla "
             f"'{first_variable}' i '{second_variable}'."
+        )
+
+        return result
+
+    #Test Friedman
+    def friedman_test(
+            self,
+            dataframe,
+            variables,
+    ):
+        if not isinstance(variables, (list, tuple)):
+            raise TypeError(
+                "Lista pomiarów testu Friedmana musi być listą lub krotką."
+            )
+
+        if len(variables) < 3:
+            raise ValueError(
+                "Test Friedmana wymaga co najmniej trzech pomiarów."
+            )
+
+        missing_columns = [
+            variable
+            for variable in variables
+            if variable not in dataframe.columns
+        ]
+
+        if missing_columns:
+            raise ValueError(
+                "Nie znaleziono kolumn: "
+                + ", ".join(missing_columns)
+            )
+
+        data = dataframe[list(variables)].copy()
+
+        for variable in variables:
+            data[variable] = pd.to_numeric(
+                data[variable],
+                errors="coerce"
+            )
+
+        # Pozostają tylko osoby posiadające wszystkie pomiary.
+        data = data.dropna()
+
+        if len(data) < 2:
+            raise ValueError(
+                "Test Friedmana wymaga co najmniej dwóch "
+                "kompletnych zestawów obserwacji."
+            )
+
+        samples = [
+            data[variable].to_numpy()
+            for variable in variables
+        ]
+
+        statistic, p_value = friedmanchisquare(*samples)
+
+        result = {
+            "test": "friedman",
+            "pomiary": list(variables),
+            "liczba_pomiarow": int(len(variables)),
+            "liczba_kompletnych_przypadkow": int(len(data)),
+            "statystyka_chi2": float(statistic),
+            "degrees_of_freedom": int(len(variables) - 1),
+            "p_value": float(p_value),
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
+        }
+
+        self.report.append(
+            "Wykonano test Friedmana dla pomiarów: "
+            + ", ".join(variables)
+            + "."
         )
 
         return result
