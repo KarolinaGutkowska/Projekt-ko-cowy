@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="70448f1a-bd00-4eb0-a084-cb54d0249383" name="Changes" comment="Rozwój porównywania grup między sobą - Test Chi-kwadrat niezależności">
-      <change afterPath="$PROJECT_DIR$/Statistics/report_formatter.py" afterDir="false" />
+    <list default="true" id="70448f1a-bd00-4eb0-a084-cb54d0249383" name="Changes" comment="Rozkłąd normalny">
+      <change afterPath="$PROJECT_DIR$/Statistics/test_selector.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/GUI/GUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/GUI/GUI.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dane_clean.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/dane_clean.xlsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/reports/huba_report.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/reports/huba_report.pdf" afterDir="false" />
@@ -413,14 +413,42 @@
       <option name="project" value="LOCAL" />
       <updated>1783598972731</updated>
     </task>
-    <option name="localTasksCounter" value="44" />
+    <task id="LOCAL-00044" summary="Rozwój porównywania grup między sobą - Test U Manna-Whitneya">
+      <option name="closed" value="true" />
+      <created>1783616370246</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1783616370246</updated>
+    </task>
+    <task id="LOCAL-00045" summary="Poprawa kodu">
+      <option name="closed" value="true" />
+      <created>1783618793785</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1783618793785</updated>
+    </task>
+    <task id="LOCAL-00046" summary="2 grupy zmienna ilościowa">
+      <option name="closed" value="true" />
+      <created>1783633184953</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1783633184953</updated>
+    </task>
+    <task id="LOCAL-00047" summary="Rozkłąd normalny">
+      <option name="closed" value="true" />
+      <created>1783644501547</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1783644501547</updated>
+    </task>
+    <option name="localTasksCounter" value="48" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Dodano test chi-kwadrat" />
-    <MESSAGE value="Dodano automatyczną interpretację p-value" />
-    <MESSAGE value="Poprawiona wersja" />
-    <MESSAGE value="Dodano zapisywanie raportu statystycznego." />
     <MESSAGE value="Dodano autmatyczne wykrywanie tpu zmiennych" />
     <MESSAGE value="Początek pracy nad GUI" />
     <MESSAGE value="Dodano wybór z listy zadania do wykonania" />
@@ -442,7 +470,11 @@
     <MESSAGE value="Rozwój porównywania grup między sobą" />
     <MESSAGE value="Rozwój porównywania grup między sobą - wybór ilości grup" />
     <MESSAGE value="Rozwój porównywania grup między sobą - Test Chi-kwadrat niezależności" />
-    <option name="LAST_COMMIT_MESSAGE" value="Rozwój porównywania grup między sobą - Test Chi-kwadrat niezależności" />
+    <MESSAGE value="Rozwój porównywania grup między sobą - Test U Manna-Whitneya" />
+    <MESSAGE value="Poprawa kodu" />
+    <MESSAGE value="2 grupy zmienna ilościowa" />
+    <MESSAGE value="Rozkłąd normalny" />
+    <option name="LAST_COMMIT_MESSAGE" value="Rozkłąd normalny" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

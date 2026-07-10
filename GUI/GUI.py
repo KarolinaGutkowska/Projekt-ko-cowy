@@ -12,6 +12,7 @@ from PyQt6.QtCore import QTimer
 from HUBA.huba import HUBA
 from Statistics.statistics_engine import StatisticsEngine
 from Statistics.report_formatter import ReportFormatter
+from Statistics.test_selector import TestSelector
 
 
 class PandasTableModel(QAbstractTableModel):
@@ -49,6 +50,8 @@ class MainWindow(QWidget):
         self.file_path = None
         self.clean_df = None
         self.results = None
+
+        self.test_selector = TestSelector()
 
         self.huba_pdf_path = "reports/huba_report.pdf"
         self.clean_file_path = "dane_clean.xlsx"
@@ -208,9 +211,9 @@ class MainWindow(QWidget):
 
         title = QLabel("Jaki charakter mają zmienne?")
         title.setStyleSheet("""
-            font-size:22px;
-            font-weight:bold;
-            padding:10px;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
         """)
 
         dependent_button = QPushButton("Zależne")
@@ -220,11 +223,15 @@ class MainWindow(QWidget):
         independent_button.setMinimumHeight(50)
 
         dependent_button.clicked.connect(
-            lambda: self.compare_groups_question_2("Zależne")
+            lambda: self.compare_groups_question_2(
+                "dependent"
+            )
         )
 
         independent_button.clicked.connect(
-            lambda: self.compare_groups_question_2("Niezależne")
+            lambda: self.compare_groups_question_2(
+                "independent"
+            )
         )
 
         layout.addWidget(title)
@@ -252,11 +259,11 @@ class MainWindow(QWidget):
         more_groups_button.setMinimumHeight(50)
 
         two_groups_button.clicked.connect(
-            lambda: self.compare_groups_question_3("Tylko 2")
+            lambda: self.compare_groups_question_3(2)
         )
 
         more_groups_button.clicked.connect(
-            lambda: self.compare_groups_question_3("Więcej niż 2")
+            lambda: self.compare_groups_question_3(3)
         )
 
         layout.addWidget(title)
@@ -286,15 +293,15 @@ class MainWindow(QWidget):
         quantitative_button.setMinimumHeight(50)
 
         nominal_button.clicked.connect(
-            lambda: self.compare_groups_question_4("Nominalna")
+            lambda: self.compare_groups_question_4("nominal")
         )
 
         ordinal_button.clicked.connect(
-            lambda: self.compare_groups_question_4("Porządkowa")
+            lambda: self.compare_groups_question_4("ordinal")
         )
 
         quantitative_button.clicked.connect(
-            lambda: self.compare_groups_question_4("Ilościowa")
+            lambda: self.compare_groups_question_4("quantitative")
         )
 
         layout.addWidget(title)
@@ -306,62 +313,51 @@ class MainWindow(QWidget):
     def compare_groups_question_4(self, variable_type):
         self.compare_variable_type = variable_type
 
-        if (
-                self.compare_dependency == "Niezależne"
-                and self.compare_groups_count == "Tylko 2"
-                and self.compare_variable_type == "Nominalna"
-        ):
-            self.show_recommended_test(
-                "chi_square",
-                "Test Chi-kwadrat niezależności"
+        if self.compare_dependency == "dependent":
+            QMessageBox.information(
+                self,
+                "W budowie",
+                "Próby zależne zostaną dodane w kolejnym etapie."
             )
+            return
 
-        if (
-                self.compare_dependency == "Niezależne"
-                and self.compare_groups_count == "Tylko 2"
-                and self.compare_variable_type == "Porządkowa"
-        ):
-            self.show_recommended_test(
-                "mann_whitney",
-                "Test U Manna-Whitneya"
+        if self.compare_dependency != "independent":
+            QMessageBox.warning(
+                self,
+                "Błąd wyboru",
+                "Nie udało się rozpoznać charakteru grup."
             )
-        if (
-                self.compare_dependency == "Niezależne"
-                and self.compare_groups_count == "Tylko 2"
-                and self.compare_variable_type == "Ilościowa"
-        ):
+            return
+
+        test_id = self.test_selector.select_independent_test(
+            groups_count=self.compare_groups_count,
+            dependent_type=self.compare_variable_type,
+        )
+
+        if test_id == "normality_required":
             self.show_independent_quantitative_normality()
             return
 
-        if (
-                self.compare_dependency == "Niezależne"
-                and self.compare_groups_count == "Więcej niż 2"
-                and self.compare_variable_type == "Nominalna"
-        ):
-            self.show_recommended_test_below(
-                "chi_square",
-                "Test Chi-kwadrat niezależności"
+        display_names = {
+            "chi_square": "Test Chi-kwadrat niezależności",
+            "mann_whitney": "Test U Manna-Whitneya",
+            "kruskal_wallis": "Test Kruskala-Wallisa",
+        }
+
+        display_name = display_names.get(test_id)
+
+        if display_name is None:
+            QMessageBox.warning(
+                self,
+                "Brak testu",
+                f"Nie znaleziono nazwy dla testu: {test_id}"
             )
             return
 
-        if (
-                self.compare_dependency == "Niezależne"
-                and self.compare_groups_count == "Więcej niż 2"
-                and self.compare_variable_type == "Porządkowa"
-        ):
-            self.show_recommended_test_below(
-                "kruskal_wallis",
-                "Test Kruskala-Wallisa"
-            )
-            return
-
-        if (
-                self.compare_dependency == "Niezależne"
-                and self.compare_groups_count == "Więcej niż 2"
-                and self.compare_variable_type == "Ilościowa"
-        ):
-            self.show_independent_quantitative_normality()
-            return
+        self.show_recommended_test(
+            test_id,
+            display_name
+        )
 
     def show_independent_quantitative_normality(self):
         self.clear_analysis_page()
@@ -471,81 +467,97 @@ class MainWindow(QWidget):
                 str(e)
             )
 
-    def calculate_compare_normality(self):
+    def calculate_independent_groups_normality(self):
         try:
             if self.clean_df is None:
-                self.compare_normality_output.setText(
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
                     "Najpierw wczytaj plik."
                 )
                 return
 
-            column = self.compare_normality_variable_combo.currentText()
+            grouping_var = self.normality_grouping_combo.currentText()
+            dependent_var = self.normality_dependent_combo.currentText()
 
-            if not column:
-                self.compare_normality_output.setText(
-                    "Brak zmiennej ilościowej do sprawdzenia."
+            if not grouping_var:
+                QMessageBox.warning(
+                    self,
+                    "Brak zmiennej grupującej",
+                    "Wybierz zmienną grupującą."
+                )
+                return
+
+            if not dependent_var:
+                QMessageBox.warning(
+                    self,
+                    "Brak zmiennej zależnej",
+                    "Wybierz zmienną zależną."
                 )
                 return
 
             stats_engine = StatisticsEngine()
 
-            result = stats_engine.normality_test(
+            normality_result = stats_engine.normality_test_by_groups(
                 self.clean_df,
-                column
+                grouping_var,
+                dependent_var,
             )
 
-            if result is None:
-                self.compare_normality_output.setText(
+            if normality_result is None:
+                QMessageBox.warning(
+                    self,
+                    "Błąd normalności",
                     "Nie udało się wykonać testu normalności."
                 )
                 return
 
-            normal_distribution = result["rozkład_normalny"]
+            number_of_groups = normality_result["number_of_groups"]
+            all_groups_normal = normality_result["all_groups_normal"]
 
-            text = "=== TEST NORMALNOŚCI ROZKŁADU ===\n\n"
-            text += f"Test: {result['test']}\n"
-            text += f"Zmienna: {result['kolumna']}\n"
-            text += f"Statystyka W: {result['statystyka_W']:.4f}\n"
-            text += f"p-value: {result['p_value']:.4f}\n\n"
-            text += result["interpretacja"]
+            variance_result = None
 
-            if normal_distribution:
-                text += "\n\nWniosek: rozkład można uznać za normalny."
+            if not all_groups_normal:
+                test_id = self.test_selector.select_independent_test(
+                    groups_count=number_of_groups,
+                    dependent_type="quantitative",
+                    normal=False,
+                )
             else:
-                text += "\n\nWniosek: rozkład odbiega od normalnego."
+                variance_result = stats_engine.levene_test(
+                    self.clean_df,
+                    grouping_var,
+                    dependent_var,
+                )
 
-            self.compare_normality_output.setText(text)
-            self.compare_normality_button.setEnabled(False)
+                test_id = self.test_selector.select_independent_test(
+                    groups_count=number_of_groups,
+                    dependent_type="quantitative",
+                    normal=True,
+                    equal_variances=variance_result["equal_variances"],
+                )
 
-            if self.compare_groups_count == "Tylko 2":
-                if normal_distribution:
-                    self.show_recommended_test_below(
-                        "t_independent",
-                        "Test t-Studenta dla prób niezależnych"
-                    )
-                else:
-                    self.show_recommended_test_below(
-                        "mann_whitney",
-                        "Test U Manna-Whitneya"
-                    )
+            display_names = {
+                "t_independent": "Test t-Studenta dla prób niezależnych",
+                "welch_t": "Test t Welcha dla prób niezależnych",
+                "mann_whitney": "Test U Manna-Whitneya",
+                "anova": "Jednoczynnikowa ANOVA",
+                "welch_anova": "Jednoczynnikowa ANOVA Welcha",
+                "kruskal_wallis": "Test Kruskala-Wallisa",
+            }
 
-            elif self.compare_groups_count == "Więcej niż 2":
-                if normal_distribution:
-                    self.show_recommended_test_below(
-                        "anova",
-                        "Jednoczynnikowa ANOVA"
-                    )
-                else:
-                    self.show_recommended_test_below(
-                        "kruskal_wallis",
-                        "Test Kruskala-Wallisa"
-                    )
+            display_name = display_names.get(test_id, test_id)
 
-        except Exception as e:
+            self.show_recommended_test(
+                test_id,
+                display_name
+            )
+
+        except Exception as error:
             QMessageBox.critical(
                 self,
-                "Błąd testu normalności",
-                str(e)
+                "Błąd doboru testu",
+                str(error)
             )
     def get_numeric_and_categorical_columns(self):
         numeric_columns = []

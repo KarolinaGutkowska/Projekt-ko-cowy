@@ -1,8 +1,17 @@
 
 import pandas as pd
-from scipy.stats import ttest_ind, mannwhitneyu, f_oneway, kruskal, chi2_contingency
-from scipy.stats import shapiro
 
+from scipy.stats import (
+    chi2_contingency,
+    f_oneway,
+    kruskal,
+    levene,
+    mannwhitneyu,
+    shapiro,
+    ttest_ind,
+)
+
+from statsmodels.stats.oneway import anova_oneway
 
 class StatisticsEngine:
 
@@ -23,41 +32,312 @@ class StatisticsEngine:
 
         return variable_types
 
-    def run_test(self, test_id, df, independent_var, dependent_var):
+    def run_test(
+            self,
+            test_id,
+            dataframe,
+            independent_var,
+            dependent_var
+    ):
         if test_id == "chi_square":
             return self.chi_square_test(
-                df,
+                dataframe,
                 independent_var,
                 dependent_var
             )
 
-        elif test_id == "mann_whitney":
+        if test_id == "mann_whitney":
             return self.mann_whitney_test(
-                df,
-                numeric_column=dependent_var,
-                group_column=independent_var
-            )
-        elif test_id == "t_independent":
-            return self.t_test(
-                df,
-                numeric_column=dependent_var,
-                group_column=independent_var
-            )
-        elif test_id == "kruskal_wallis":
-            return self.kruskal_wallis_test(
-                df,
-                numeric_column=dependent_var,
-                group_column=independent_var
+                dataframe,
+                independent_var,
+                dependent_var
             )
 
-        elif test_id == "anova":
-            return self.anova_test(
-                df,
-                numeric_column=dependent_var,
-                group_column=independent_var
+        if test_id == "t_independent":
+            return self.t_test(
+                dataframe,
+                independent_var,
+                dependent_var
             )
-        else:
-            return None
+
+        if test_id == "welch_t":
+            return self.welch_t_test(
+                dataframe,
+                independent_var,
+                dependent_var
+            )
+
+        if test_id == "anova":
+            return self.anova_test(
+                dataframe,
+                independent_var,
+                dependent_var
+            )
+
+        if test_id == "welch_anova":
+            return self.welch_anova_test(
+                dataframe,
+                independent_var,
+                dependent_var
+            )
+
+        if test_id == "kruskal_wallis":
+            return self.kruskal_wallis_test(
+                dataframe,
+                independent_var,
+                dependent_var
+            )
+
+        raise ValueError(
+            f"Nieznany identyfikator testu: {test_id}"
+        )
+
+    def normality_test_by_groups(
+            self,
+            dataframe,
+            grouping_variable,
+            dependent_variable,
+    ):
+        data = dataframe[
+            [grouping_variable, dependent_variable]
+        ].copy()
+
+        data[dependent_variable] = pd.to_numeric(
+            data[dependent_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna(
+            subset=[
+                grouping_variable,
+                dependent_variable
+            ]
+        )
+
+        grouped_data = list(
+            data.groupby(
+                grouping_variable,
+                sort=False
+            )
+        )
+
+        if len(grouped_data) < 2:
+            raise ValueError(
+                "Do porównania wymagane są co najmniej dwie grupy."
+            )
+
+        groups_result = {}
+
+        for group_name, group_df in grouped_data:
+            values = group_df[dependent_variable].dropna()
+
+            sample_size = len(values)
+
+            if sample_size < 3:
+                groups_result[str(group_name)] = {
+                    "statistic": None,
+                    "p_value": None,
+                    "is_normal": False,
+                    "sample_size": sample_size,
+                    "error": (
+                        "Za mało obserwacji do wykonania "
+                        "testu Shapiro-Wilka."
+                    ),
+                }
+                continue
+
+            statistic, p_value = shapiro(values)
+
+            groups_result[str(group_name)] = {
+                "statistic": float(statistic),
+                "p_value": float(p_value),
+                "is_normal": bool(p_value >= 0.05),
+                "sample_size": int(sample_size),
+                "error": None,
+            }
+
+        all_groups_normal = all(
+            group_result["is_normal"]
+            for group_result in groups_result.values()
+        )
+
+        result = {
+            "test_id": "shapiro_wilk",
+            "test": "Shapiro-Wilk",
+            "grouping_variable": grouping_variable,
+            "dependent_variable": dependent_variable,
+            "number_of_groups": len(groups_result),
+            "groups": groups_result,
+            "all_groups_normal": bool(all_groups_normal),
+            "alpha": 0.05,
+        }
+
+        self.report.append(
+            f"Wykonano test Shapiro-Wilka w grupach dla "
+            f"zmiennej '{dependent_variable}' względem "
+            f"zmiennej grupującej '{grouping_variable}'."
+        )
+
+        return result
+    #ANOVA
+    def welch_anova_test(
+            self,
+            dataframe,
+            grouping_variable,
+            dependent_variable,
+    ):
+        data = dataframe[
+            [grouping_variable, dependent_variable]
+        ].copy()
+
+        data[dependent_variable] = pd.to_numeric(
+            data[dependent_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna()
+
+        grouped = list(
+            data.groupby(
+                grouping_variable,
+                sort=False
+            )
+        )
+
+        if len(grouped) < 3:
+            raise ValueError(
+                "ANOVA Welcha wymaga co najmniej trzech grup."
+            )
+
+        group_names = []
+        data_groups = []
+
+        for group_name, group_df in grouped:
+            values = group_df[dependent_variable].dropna()
+
+            if len(values) < 2:
+                raise ValueError(
+                    f"Grupa „{group_name}” ma za mało obserwacji."
+                )
+
+            group_names.append(str(group_name))
+            data_groups.append(values.to_numpy())
+
+        welch_result = anova_oneway(
+            data_groups,
+            use_var="unequal",
+            welch_correction=True,
+        )
+
+        statistic = float(welch_result.statistic)
+        p_value = float(welch_result.pvalue)
+
+        result = {
+            "test": "welch_anova",
+            "kolumna_liczbowa": dependent_variable,
+            "kolumna_grupująca": grouping_variable,
+            "liczba_grup": len(data_groups),
+            "grupy": group_names,
+            "statystyka_F": statistic,
+            "p_value": p_value,
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
+        }
+
+        self.report.append(
+            f"Wykonano ANOVA Welcha dla "
+            f"'{dependent_variable}' względem "
+            f"'{grouping_variable}'."
+        )
+
+        return result
+    #Jednorodność wariancji
+    def levene_test(
+            self,
+            dataframe,
+            grouping_variable,
+            dependent_variable,
+    ):
+        from scipy.stats import levene
+        import pandas as pd
+
+        data = dataframe[
+            [grouping_variable, dependent_variable]
+        ].dropna().copy()
+
+        data[dependent_variable] = pd.to_numeric(
+            data[dependent_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna()
+
+        groups = [
+            group[dependent_variable].to_numpy()
+            for _, group in data.groupby(grouping_variable)
+        ]
+
+        if len(groups) < 2:
+            raise ValueError(
+                "Test Levene’a wymaga co najmniej dwóch grup."
+            )
+
+        statistic, p_value = levene(*groups)
+
+        return {
+            "test_id": "levene",
+            "statistic": float(statistic),
+            "p_value": float(p_value),
+            "equal_variances": bool(p_value >= 0.05),
+        }
+    #Test t Welcha
+    def welch_t_test(
+            self,
+            dataframe,
+            grouping_variable,
+            dependent_variable,
+    ):
+        from scipy.stats import ttest_ind
+        import pandas as pd
+
+        data = dataframe[
+            [grouping_variable, dependent_variable]
+        ].dropna().copy()
+
+        data[dependent_variable] = pd.to_numeric(
+            data[dependent_variable],
+            errors="coerce"
+        )
+        data = data.dropna()
+
+        grouped = list(data.groupby(grouping_variable))
+
+        if len(grouped) != 2:
+            raise ValueError(
+                "Test t Welcha wymaga dokładnie dwóch grup."
+            )
+
+        group_1_name, group_1_df = grouped[0]
+        group_2_name, group_2_df = grouped[1]
+
+        statistic, p_value = ttest_ind(
+            group_1_df[dependent_variable],
+            group_2_df[dependent_variable],
+            equal_var=False,
+            nan_policy="omit",
+        )
+
+        return {
+            "grupa_1": str(group_1_name),
+            "grupa_2": str(group_2_name),
+            "statystyka_t": float(statistic),
+            "p_value": float(p_value),
+            "interpretacja": (
+                "Stwierdzono istotne różnice między grupami."
+                if p_value < 0.05
+                else "Nie stwierdzono istotnych różnic między grupami."
+            ),
+        }
     #Statystyki opisowe
     def descriptive_statistics(self, df):
         numeric_df = df.select_dtypes(include="number")
@@ -86,181 +366,273 @@ class StatisticsEngine:
 
         return correlation_matrix
 
-    def format_t_independent(self, result, independent_var, dependent_var):
-        return f"""
-    ========================================
-    TEST T-STUDENTA DLA PRÓB NIEZALEŻNYCH
-    ========================================
 
-    ZMIENNA GRUPUJĄCA:
-    {independent_var}
-
-    ZMIENNA ZALEŻNA:
-    {dependent_var}
-
-    GRUPA 1:
-    {result['grupa_1']}
-
-    GRUPA 2:
-    {result['grupa_2']}
-
-    WYNIKI TESTU:
-    t = {result['statystyka_t']:.4f}
-    p-value = {result['p_value']:.4f}
-
-    INTERPRETACJA:
-    {result['interpretacja']}
-    ========================================
-    """
     #T-test
-    def t_test(self, df, numeric_column, group_column):
-        groups = df[group_column].dropna().unique()
+    def t_test(
+            self,
+            dataframe,
+            grouping_variable,
+            dependent_variable,
+    ):
+        data = dataframe[
+            [grouping_variable, dependent_variable]
+        ].copy()
 
-        if len(groups) != 2:
-            self.report.append(
-                f"Test t wymaga dokładnie 2 grup w kolumnie '{group_column}'."
+        data[dependent_variable] = pd.to_numeric(
+            data[dependent_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna()
+
+        grouped = list(
+            data.groupby(
+                grouping_variable,
+                sort=False
             )
-            return None
+        )
 
-        group1 = pd.to_numeric(
-            df[df[group_column] == groups[0]][numeric_column],
-            errors="coerce"
-        ).dropna()
+        if len(grouped) != 2:
+            raise ValueError(
+                "Test t-Studenta wymaga dokładnie dwóch grup."
+            )
 
-        group2 = pd.to_numeric(
-            df[df[group_column] == groups[1]][numeric_column],
-            errors="coerce"
-        ).dropna()
+        group_1_name, group_1_df = grouped[0]
+        group_2_name, group_2_df = grouped[1]
 
-        statistic, p_value = ttest_ind(group1, group2, equal_var=False)
+        group_1 = group_1_df[dependent_variable]
+        group_2 = group_2_df[dependent_variable]
+
+        if len(group_1) < 2 or len(group_2) < 2:
+            raise ValueError(
+                "Każda grupa musi zawierać co najmniej "
+                "dwie poprawne obserwacje."
+            )
+
+        statistic, p_value = ttest_ind(
+            group_1,
+            group_2,
+            equal_var=True,
+            nan_policy="omit",
+        )
 
         result = {
-            "kolumna_liczbowa": numeric_column,
-            "kolumna_grupująca": group_column,
-            "grupa_1": groups[0],
-            "grupa_2": groups[1],
-            "statystyka_t": statistic,
-            "p_value": p_value,
-            "istotne_statystycznie": p_value < 0.05,
-            "interpretacja": self.interpret_p_value(p_value)
+            "test": "t_independent",
+            "kolumna_liczbowa": dependent_variable,
+            "kolumna_grupująca": grouping_variable,
+            "grupa_1": str(group_1_name),
+            "grupa_2": str(group_2_name),
+            "statystyka_t": float(statistic),
+            "p_value": float(p_value),
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
         }
 
         self.report.append(
-            f"Wykonano test t-Studenta dla '{numeric_column}' względem '{group_column}'."
+            f"Wykonano test t-Studenta dla "
+            f"'{dependent_variable}' względem "
+            f"'{grouping_variable}'."
         )
 
         return result
-
     #Test Mann–Whitney
-    def mann_whitney_test(self, df, numeric_column, group_column):
-        groups = df[group_column].dropna().unique()
+    def mann_whitney_test(
+            self,
+            dataframe,
+            grouping_variable,
+            dependent_variable,
+    ):
+        data = dataframe[
+            [grouping_variable, dependent_variable]
+        ].copy()
 
-        if len(groups) != 2:
-            self.report.append(
-                f"Test Mann–Whitney wymaga dokładnie 2 grup w kolumnie '{group_column}'."
+        data[dependent_variable] = pd.to_numeric(
+            data[dependent_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna()
+
+        grouped = list(
+            data.groupby(
+                grouping_variable,
+                sort=False
             )
-            return None
+        )
 
-        group1 = pd.to_numeric(
-            df[df[group_column] == groups[0]][numeric_column],
-            errors="coerce"
-        ).dropna()
+        if len(grouped) != 2:
+            raise ValueError(
+                "Test Manna-Whitneya wymaga dokładnie dwóch grup."
+            )
 
-        group2 = pd.to_numeric(
-            df[df[group_column] == groups[1]][numeric_column],
-            errors="coerce"
-        ).dropna()
+        group_1_name, group_1_df = grouped[0]
+        group_2_name, group_2_df = grouped[1]
 
-        statistic, p_value = mannwhitneyu(group1, group2, alternative="two-sided")
+        group_1 = group_1_df[dependent_variable]
+        group_2 = group_2_df[dependent_variable]
+
+        if group_1.empty or group_2.empty:
+            raise ValueError(
+                "Obie grupy muszą zawierać poprawne obserwacje."
+            )
+
+        statistic, p_value = mannwhitneyu(
+            group_1,
+            group_2,
+            alternative="two-sided",
+        )
 
         result = {
-            "test": "Mann–Whitney",
-            "kolumna_liczbowa": numeric_column,
-            "kolumna_grupująca": group_column,
-            "grupa_1": groups[0],
-            "grupa_2": groups[1],
-            "statystyka_U": statistic,
-            "p_value": p_value,
-            "istotne_statystycznie": p_value < 0.05,
-            "interpretacja": self.interpret_p_value(p_value)
+            "test": "mann_whitney",
+            "kolumna_liczbowa": dependent_variable,
+            "kolumna_grupująca": grouping_variable,
+            "grupa_1": str(group_1_name),
+            "grupa_2": str(group_2_name),
+            "statystyka_U": float(statistic),
+            "p_value": float(p_value),
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
         }
 
         self.report.append(
-            f"Wykonano test Mann–Whitney dla '{numeric_column}' względem '{group_column}'."
+            f"Wykonano test Manna-Whitneya dla "
+            f"'{dependent_variable}' względem "
+            f"'{grouping_variable}'."
         )
 
         return result
-
     #ANOVA
-    def anova_test(self, df, numeric_column, group_column):
-        groups = df[group_column].dropna().unique()
+    def anova_test(
+            self,
+            dataframe,
+            grouping_variable,
+            dependent_variable,
+    ):
+        data = dataframe[
+            [grouping_variable, dependent_variable]
+        ].copy()
 
-        if len(groups) < 3:
-            self.report.append(
-                f"ANOVA wymaga co najmniej 3 grup w kolumnie '{group_column}'."
+        data[dependent_variable] = pd.to_numeric(
+            data[dependent_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna()
+
+        grouped = list(
+            data.groupby(
+                grouping_variable,
+                sort=False
             )
-            return None
+        )
 
-        data_groups = [
-            df[df[group_column] == group][numeric_column].dropna()
-            for group in groups
-        ]
+        if len(grouped) < 3:
+            raise ValueError(
+                "ANOVA wymaga co najmniej trzech grup."
+            )
+
+        group_names = []
+        data_groups = []
+
+        for group_name, group_df in grouped:
+            values = group_df[dependent_variable].dropna()
+
+            if len(values) < 2:
+                raise ValueError(
+                    f"Grupa „{group_name}” ma za mało obserwacji."
+                )
+
+            group_names.append(str(group_name))
+            data_groups.append(values.to_numpy())
 
         statistic, p_value = f_oneway(*data_groups)
 
         result = {
-            "test": "ANOVA",
-            "kolumna_liczbowa": numeric_column,
-            "kolumna_grupująca": group_column,
-            "liczba_grup": len(groups),
-            "grupy": list(groups),
-            "statystyka_F": statistic,
-            "p_value": p_value,
-            "istotne_statystycznie": p_value < 0.05,
-            "interpretacja": self.interpret_p_value(p_value)
+            "test": "anova",
+            "kolumna_liczbowa": dependent_variable,
+            "kolumna_grupująca": grouping_variable,
+            "liczba_grup": len(data_groups),
+            "grupy": group_names,
+            "statystyka_F": float(statistic),
+            "p_value": float(p_value),
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
         }
 
         self.report.append(
-            f"Wykonano test ANOVA dla '{numeric_column}' względem '{group_column}'."
+            f"Wykonano ANOVA dla '{dependent_variable}' "
+            f"względem '{grouping_variable}'."
         )
 
         return result
 
     # Test Kruskal–Wallis
-    def kruskal_wallis_test(self, df, numeric_column, group_column):
-        groups = df[group_column].dropna().unique()
+    def kruskal_wallis_test(
+            self,
+            dataframe,
+            grouping_variable,
+            dependent_variable,
+    ):
+        data = dataframe[
+            [grouping_variable, dependent_variable]
+        ].copy()
 
-        if len(groups) < 3:
-            self.report.append(
-                f"Test Kruskal–Wallis wymaga co najmniej 3 grup w kolumnie '{group_column}'."
+        data[dependent_variable] = pd.to_numeric(
+            data[dependent_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna()
+
+        grouped = list(
+            data.groupby(
+                grouping_variable,
+                sort=False
             )
-            return None
+        )
 
-        data_groups = [
-            df[df[group_column] == group][numeric_column].dropna()
-            for group in groups
-        ]
+        if len(grouped) < 3:
+            raise ValueError(
+                "Test Kruskala-Wallisa wymaga "
+                "co najmniej trzech grup."
+            )
+
+        group_names = []
+        data_groups = []
+
+        for group_name, group_df in grouped:
+            values = group_df[dependent_variable].dropna()
+
+            if values.empty:
+                raise ValueError(
+                    f"Grupa „{group_name}” nie zawiera "
+                    "poprawnych obserwacji."
+                )
+
+            group_names.append(str(group_name))
+            data_groups.append(values.to_numpy())
 
         statistic, p_value = kruskal(*data_groups)
 
         result = {
-            "test": "Kruskal–Wallis",
-            "kolumna_liczbowa": numeric_column,
-            "kolumna_grupująca": group_column,
-            "liczba_grup": len(groups),
-            "grupy": list(groups),
-            "statystyka_H": statistic,
-            "p_value": p_value,
-            "istotne_statystycznie": p_value < 0.05,
-            "interpretacja": self.interpret_p_value(p_value)
+            "test": "kruskal_wallis",
+            "kolumna_liczbowa": dependent_variable,
+            "kolumna_grupująca": grouping_variable,
+            "liczba_grup": len(data_groups),
+            "grupy": group_names,
+            "statystyka_H": float(statistic),
+            "p_value": float(p_value),
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
         }
 
         self.report.append(
-            f"Wykonano test Kruskal–Wallis dla '{numeric_column}' względem '{group_column}'."
+            f"Wykonano test Kruskala-Wallisa dla "
+            f"'{dependent_variable}' względem "
+            f"'{grouping_variable}'."
         )
 
         return result
-
     #Test chi-kwadrat
     def chi_square_test(self, df, column1, column2):
         contingency_table = pd.crosstab(
