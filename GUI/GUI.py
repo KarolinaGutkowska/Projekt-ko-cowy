@@ -330,7 +330,7 @@ class MainWindow(QWidget):
                 and self.compare_groups_count == "Tylko 2"
                 and self.compare_variable_type == "Ilościowa"
         ):
-            self.show_normality_question_for_compare_groups()
+            self.show_independent_quantitative_normality()
             return
 
         if (
@@ -360,10 +360,10 @@ class MainWindow(QWidget):
                 and self.compare_groups_count == "Więcej niż 2"
                 and self.compare_variable_type == "Ilościowa"
         ):
-            self.show_normality_question_for_independent_more_than_two()
+            self.show_independent_quantitative_normality()
             return
 
-    def show_normality_question_for_independent_more_than_two(self):
+    def show_independent_quantitative_normality(self):
         self.clear_analysis_page()
         layout = self.analysis_page.layout()
 
@@ -374,133 +374,56 @@ class MainWindow(QWidget):
             padding: 10px;
         """)
 
-        self.compare_normality_variable_combo = QComboBox()
+        description = QLabel(
+            "Wybierz zmienną grupującą oraz zmienną ilościową. "
+            "Program sprawdzi normalność rozkładu i automatycznie "
+            "dobierze odpowiedni test statystyczny."
+        )
+        description.setWordWrap(True)
 
-        numeric_columns, _ = self.get_numeric_and_categorical_columns()
-        self.compare_normality_variable_combo.addItems(numeric_columns)
+        self.normality_grouping_combo = QComboBox()
+        self.normality_dependent_combo = QComboBox()
 
-        self.compare_normality_button = QPushButton("Oblicz rozkład normalny")
-        self.compare_normality_button.setMinimumHeight(45)
-        self.compare_normality_button.clicked.connect(
-            self.calculate_compare_normality
+        numeric_columns, categorical_columns = (
+            self.get_numeric_and_categorical_columns()
+        )
+
+        self.normality_grouping_combo.addItems(categorical_columns)
+        self.normality_dependent_combo.addItems(numeric_columns)
+
+        calculate_button = QPushButton(
+            "Sprawdź normalność i dobierz test"
+        )
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            self.calculate_independent_groups_normality
         )
 
         self.compare_normality_output = QTextEdit()
         self.compare_normality_output.setReadOnly(True)
-        self.compare_normality_output.setMaximumHeight(160)
+        self.compare_normality_output.setMaximumHeight(220)
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(
+            lambda: self.compare_groups_question_3(
+                self.compare_groups_count
+            )
+        )
 
         layout.addWidget(title)
-        layout.addWidget(
-            QLabel("Wybierz zmienną do sprawdzenia normalności:")
-        )
-        layout.addWidget(self.compare_normality_variable_combo)
-        layout.addWidget(self.compare_normality_button)
+        layout.addWidget(description)
+
+        layout.addWidget(QLabel("Zmienna grupująca:"))
+        layout.addWidget(self.normality_grouping_combo)
+
+        layout.addWidget(QLabel("Zmienna zależna ilościowa:"))
+        layout.addWidget(self.normality_dependent_combo)
+
+        layout.addWidget(calculate_button)
         layout.addWidget(self.compare_normality_output)
+        layout.addWidget(back_button)
         layout.addStretch()
-    def show_normality_question_for_compare_groups(self):
-        self.clear_analysis_page()
-        layout = self.analysis_page.layout()
-
-        title = QLabel("Sprawdzenie normalności rozkładu")
-        title.setStyleSheet("""
-            font-size: 22px;
-            font-weight: bold;
-            padding: 10px;
-        """)
-
-        self.compare_normality_variable_combo = QComboBox()
-
-        numeric_columns, _ = self.get_numeric_and_categorical_columns()
-        self.compare_normality_variable_combo.addItems(numeric_columns)
-
-        self.compare_normality_button = QPushButton("Oblicz rozkład normalny")
-        self.compare_normality_button.setMinimumHeight(45)
-        self.compare_normality_button.clicked.connect(
-            self.calculate_compare_normality
-        )
-
-        self.compare_normality_output = QTextEdit()
-        self.compare_normality_output.setReadOnly(True)
-        self.compare_normality_output.setMaximumHeight(160)
-
-        layout.addWidget(title)
-        layout.addWidget(
-            QLabel("Wybierz zmienną do sprawdzenia normalności:")
-        )
-        layout.addWidget(self.compare_normality_variable_combo)
-        layout.addWidget(self.compare_normality_button)
-        layout.addWidget(self.compare_normality_output)
-        layout.addStretch()
-    def show_recommended_test_below(self, test_id, display_name):
-        layout = self.analysis_page.layout()
-
-        title = QLabel("Rekomendowany test:")
-        title.setStyleSheet("""
-            font-size:22px;
-            font-weight:bold;
-            padding:10px;
-        """)
-
-        result = QLabel(display_name)
-        result.setStyleSheet("""
-            font-size:20px;
-            padding:10px;
-        """)
-
-        self.independent_variable_combo = QComboBox()
-        self.dependent_variable_combo = QComboBox()
-
-        if self.clean_df is not None:
-            numeric_columns, categorical_columns = self.get_numeric_and_categorical_columns()
-
-            if test_id == "chi_square":
-                self.independent_variable_combo.addItems(categorical_columns)
-                self.dependent_variable_combo.addItems(categorical_columns)
-
-            elif test_id in ["mann_whitney", "t_independent", "anova", "kruskal_wallis"]:
-                self.independent_variable_combo.addItems(categorical_columns)
-                self.dependent_variable_combo.addItems(numeric_columns)
-
-            else:
-                columns = list(self.clean_df.columns)
-                self.independent_variable_combo.addItems(columns)
-                self.dependent_variable_combo.addItems(columns)
-
-        calculate_test_button = QPushButton("Oblicz statystyki")
-        calculate_test_button.setMinimumHeight(45)
-        calculate_test_button.clicked.connect(
-            lambda: self.calculate_recommended_test(test_id, display_name)
-        )
-
-        add_test_to_report_button = QPushButton("Dodaj do raportu")
-        add_test_to_report_button.setMinimumHeight(45)
-        add_test_to_report_button.clicked.connect(self.add_current_results_to_report)
-
-        self.recommended_test_output = QTextEdit()
-        self.recommended_test_output.setReadOnly(True)
-
-        layout.addWidget(title)
-        layout.addWidget(result)
-
-        layout.addWidget(QLabel("Zmienna niezależna / grupująca:"))
-        layout.addWidget(self.independent_variable_combo)
-
-        layout.addWidget(QLabel("Zmienna zależna:"))
-        layout.addWidget(self.dependent_variable_combo)
-        normality_button = QPushButton("Sprawdź rozkład normalny dla zmiennej zależnej")
-        normality_button.setMinimumHeight(40)
-        normality_button.clicked.connect(self.check_normality_for_dependent_variable)
-
-        self.normality_result_output = QTextEdit()
-        self.normality_result_output.setReadOnly(True)
-
-        layout.addWidget(normality_button)
-        layout.addWidget(self.normality_result_output)
-
-        layout.addWidget(calculate_test_button)
-        layout.addWidget(add_test_to_report_button)
-        layout.addWidget(QLabel("Wyniki:"))
-        layout.addWidget(self.recommended_test_output)
 
     def check_normality_for_dependent_variable(self):
         try:
@@ -642,59 +565,101 @@ class MainWindow(QWidget):
 
         return numeric_columns, categorical_columns
 
-    def show_recommended_test(self, test_name):
+    def show_recommended_test(self, test_id, display_name):
         self.clear_analysis_page()
         layout = self.analysis_page.layout()
 
         title = QLabel("Rekomendowany test:")
         title.setStyleSheet("""
-            font-size:22px;
-            font-weight:bold;
-            padding:10px;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
         """)
 
-        result = QLabel(display_name)
-        result.setStyleSheet("""
-            font-size:20px;
-            padding:10px;
+        result_label = QLabel(display_name)
+        result_label.setStyleSheet("""
+            font-size: 20px;
+            padding: 10px;
         """)
+        result_label.setWordWrap(True)
 
         self.independent_variable_combo = QComboBox()
         self.dependent_variable_combo = QComboBox()
 
         if self.clean_df is not None:
-            columns = list(self.clean_df.columns)
-            self.independent_variable_combo.addItems(columns)
-            self.dependent_variable_combo.addItems(columns)
+            numeric_columns, categorical_columns = (
+                self.get_numeric_and_categorical_columns()
+            )
+
+            if test_id == "chi_square":
+                self.independent_variable_combo.addItems(
+                    categorical_columns
+                )
+                self.dependent_variable_combo.addItems(
+                    categorical_columns
+                )
+
+            elif test_id in [
+                "mann_whitney",
+                "t_independent",
+                "anova",
+                "kruskal_wallis",
+            ]:
+                self.independent_variable_combo.addItems(
+                    categorical_columns
+                )
+                self.dependent_variable_combo.addItems(
+                    numeric_columns
+                )
+
+            else:
+                all_columns = list(self.clean_df.columns)
+
+                self.independent_variable_combo.addItems(
+                    all_columns
+                )
+                self.dependent_variable_combo.addItems(
+                    all_columns
+                )
+
+        calculate_test_button = QPushButton("Oblicz statystyki")
+        calculate_test_button.setMinimumHeight(45)
+        calculate_test_button.clicked.connect(
+            lambda: self.calculate_recommended_test(
+                test_id,
+                display_name
+            )
+        )
+
+        add_test_to_report_button = QPushButton("Dodaj do raportu")
+        add_test_to_report_button.setMinimumHeight(45)
+        add_test_to_report_button.clicked.connect(
+            self.add_current_results_to_report
+        )
 
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
-        back_button.clicked.connect(self.build_analysis_page)
+        back_button.clicked.connect(
+            self.show_compare_groups_question_1
+        )
+
+        self.recommended_test_output = QTextEdit()
+        self.recommended_test_output.setReadOnly(True)
 
         layout.addWidget(title)
-        layout.addWidget(result)
+        layout.addWidget(result_label)
 
-        layout.addWidget(QLabel("Zmienna niezależna:"))
+        layout.addWidget(
+            QLabel("Zmienna niezależna / grupująca:")
+        )
         layout.addWidget(self.independent_variable_combo)
 
         layout.addWidget(QLabel("Zmienna zależna:"))
         layout.addWidget(self.dependent_variable_combo)
 
-        calculate_test_button = QPushButton("Oblicz statystyki")
-        calculate_test_button.setMinimumHeight(45)
-        calculate_test_button.clicked.connect(
-            lambda: self.calculate_recommended_test(test_id, display_name)
-        )
-
-        add_test_to_report_button = QPushButton("Dodaj do raportu")
-        add_test_to_report_button.setMinimumHeight(45)
-        add_test_to_report_button.clicked.connect(self.add_current_results_to_report)
-
-        self.recommended_test_output = QTextEdit()
-        self.recommended_test_output.setReadOnly(True)
-
         layout.addWidget(calculate_test_button)
         layout.addWidget(add_test_to_report_button)
+
         layout.addWidget(QLabel("Wyniki:"))
         layout.addWidget(self.recommended_test_output)
 
