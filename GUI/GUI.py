@@ -289,9 +289,8 @@ class MainWindow(QWidget):
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(
-            self.show_relationship_variables_count_question
+            self.return_to_analysis_start
         )
-
         layout.addWidget(title)
         layout.addWidget(description)
 
@@ -445,7 +444,7 @@ class MainWindow(QWidget):
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(
-            self.show_advanced_relationship_question
+            self.return_to_analysis_start
         )
 
         self.recommended_test_output = QTextEdit()
@@ -534,9 +533,8 @@ class MainWindow(QWidget):
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(
-            self.show_advanced_relationship_question
+            self.return_to_analysis_start
         )
-
         self.recommended_test_output = QTextEdit()
         self.recommended_test_output.setReadOnly(True)
 
@@ -712,9 +710,8 @@ class MainWindow(QWidget):
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(
-            self.show_advanced_relationship_question
+            self.return_to_analysis_start
         )
-
         self.recommended_test_output = QTextEdit()
         self.recommended_test_output.setReadOnly(True)
 
@@ -890,7 +887,7 @@ class MainWindow(QWidget):
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(
-            self.show_advanced_relationship_question
+            self.return_to_analysis_start
         )
 
         self.recommended_test_output = QTextEdit()
@@ -1042,7 +1039,7 @@ class MainWindow(QWidget):
 
         back_button = QPushButton("Wstecz")
         back_button.clicked.connect(
-            lambda: self.show_relationship_variable_types_question(2)
+            self.return_to_analysis_start
         )
 
         layout.addWidget(title)
@@ -1378,7 +1375,7 @@ class MainWindow(QWidget):
 
         back_button = QPushButton("Wstecz")
         back_button.clicked.connect(
-            lambda: self.show_relationship_variable_types_question(2)
+            self.return_to_analysis_start
         )
 
         layout.addWidget(title)
@@ -1937,11 +1934,8 @@ class MainWindow(QWidget):
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(
-            lambda: self.compare_groups_question_3(
-                self.compare_groups_count
-            )
+            self.return_to_analysis_start
         )
-
         layout.addWidget(title)
         layout.addWidget(description)
 
@@ -2194,7 +2188,7 @@ class MainWindow(QWidget):
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(
-            self.show_compare_groups_question_1
+            self.return_to_analysis_start
         )
 
         self.recommended_test_output = QTextEdit()
@@ -2283,9 +2277,8 @@ class MainWindow(QWidget):
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(
-            self.show_compare_groups_question_1
+            self.return_to_analysis_start
         )
-
         self.recommended_test_output = QTextEdit()
         self.recommended_test_output.setReadOnly(True)
 
@@ -2488,9 +2481,7 @@ class MainWindow(QWidget):
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(
-            lambda: self.compare_groups_question_3(
-                self.compare_groups_count
-            )
+            self.return_to_analysis_start
         )
 
         layout.addWidget(title)
@@ -2699,7 +2690,7 @@ class MainWindow(QWidget):
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(
-            self.show_compare_groups_question_1
+            self.return_to_analysis_start
         )
 
         self.recommended_test_output = QTextEdit()
@@ -2907,6 +2898,10 @@ class MainWindow(QWidget):
                 "Błąd statystyk opisowych",
                 str(error)
             )
+
+    def return_to_analysis_start(self):
+        self.build_analysis_page()
+
     def build_normality_page(self):
         layout = QVBoxLayout()
 
@@ -3209,11 +3204,8 @@ class MainWindow(QWidget):
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
         back_button.clicked.connect(
-            lambda: self.compare_groups_question_3(
-                self.compare_groups_count
-            )
+            self.return_to_analysis_start
         )
-
         layout.addWidget(title)
         layout.addWidget(description)
         layout.addWidget(scroll_area)
