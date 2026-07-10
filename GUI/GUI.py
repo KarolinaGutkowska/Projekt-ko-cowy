@@ -197,13 +197,282 @@ class MainWindow(QWidget):
         )
 
         more_variables_button.clicked.connect(
-            self.show_advanced_relationship_not_ready
+            self.show_advanced_relationship_question
         )
 
         layout.addWidget(title)
         layout.addWidget(two_variables_button)
         layout.addWidget(more_variables_button)
         layout.addStretch()
+
+    def show_advanced_relationship_question(self):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Jaką analizę chcesz wykonać?")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        description = QLabel(
+            "Analizy dla więcej niż dwóch zmiennych."
+        )
+        description.setWordWrap(True)
+
+        linear_regression_button = QPushButton(
+            "Regresja liniowa"
+        )
+
+        logistic_regression_button = QPushButton(
+            "Regresja logistyczna"
+        )
+
+        mediation_button = QPushButton(
+            "Mediacja"
+        )
+
+        moderation_button = QPushButton(
+            "Moderacja"
+        )
+
+        buttons = [
+            linear_regression_button,
+            logistic_regression_button,
+            mediation_button,
+            moderation_button,
+        ]
+
+        for button in buttons:
+            button.setMinimumHeight(50)
+
+        linear_regression_button.clicked.connect(
+            self.show_linear_regression_variables
+        )
+
+        logistic_regression_button.clicked.connect(
+            lambda: self.show_analysis_not_ready(
+                "Regresja logistyczna"
+            )
+        )
+
+        mediation_button.clicked.connect(
+            lambda: self.show_analysis_not_ready(
+                "Analiza mediacji"
+            )
+        )
+
+        moderation_button.clicked.connect(
+            lambda: self.show_analysis_not_ready(
+                "Analiza moderacji"
+            )
+        )
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(
+            self.show_relationship_variables_count_question
+        )
+
+        layout.addWidget(title)
+        layout.addWidget(description)
+
+        for button in buttons:
+            layout.addWidget(button)
+
+        layout.addWidget(back_button)
+        layout.addStretch()
+
+    def show_analysis_not_ready(self, analysis_name):
+        QMessageBox.information(
+            self,
+            "W budowie",
+            f"{analysis_name} zostanie dodana "
+            "w następnym etapie."
+        )
+
+    def show_linear_regression_variables(self):
+        if self.clean_df is None:
+            QMessageBox.warning(
+                self,
+                "Brak danych",
+                "Najpierw wczytaj plik."
+            )
+            return
+
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Regresja liniowa")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        description = QLabel(
+            "Wybierz jedną ilościową zmienną zależną oraz "
+            "co najmniej dwie ilościowe zmienne niezależne."
+        )
+        description.setWordWrap(True)
+
+        numeric_columns, _ = (
+            self.get_numeric_and_categorical_columns()
+        )
+
+        self.regression_dependent_combo = QComboBox()
+        self.regression_dependent_combo.addItems(
+            numeric_columns
+        )
+
+        predictors_label = QLabel(
+            "Zmienne niezależne:"
+        )
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+
+        scroll_content = QWidget()
+        checkbox_layout = QVBoxLayout()
+
+        self.regression_predictor_checkboxes = []
+
+        for column in numeric_columns:
+            checkbox = QCheckBox(str(column))
+            self.regression_predictor_checkboxes.append(
+                checkbox
+            )
+            checkbox_layout.addWidget(checkbox)
+
+        checkbox_layout.addStretch()
+        scroll_content.setLayout(checkbox_layout)
+        scroll_area.setWidget(scroll_content)
+
+        calculate_button = QPushButton(
+            "Oblicz regresję liniową"
+        )
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            self.calculate_linear_regression
+        )
+
+        add_to_report_button = QPushButton(
+            "Dodaj do raportu"
+        )
+        add_to_report_button.setMinimumHeight(45)
+        add_to_report_button.clicked.connect(
+            self.add_current_results_to_report
+        )
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(
+            self.show_advanced_relationship_question
+        )
+
+        self.recommended_test_output = QTextEdit()
+        self.recommended_test_output.setReadOnly(True)
+
+        layout.addWidget(title)
+        layout.addWidget(description)
+
+        layout.addWidget(
+            QLabel("Zmienna zależna:")
+        )
+        layout.addWidget(
+            self.regression_dependent_combo
+        )
+
+        layout.addWidget(predictors_label)
+        layout.addWidget(scroll_area)
+
+        layout.addWidget(calculate_button)
+        layout.addWidget(add_to_report_button)
+
+        layout.addWidget(QLabel("Wyniki:"))
+        layout.addWidget(self.recommended_test_output)
+
+        layout.addWidget(back_button)
+        layout.addStretch()
+
+    def calculate_linear_regression(self):
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
+
+            dependent_variable = (
+                self.regression_dependent_combo.currentText()
+            )
+
+            independent_variables = [
+                checkbox.text()
+                for checkbox
+                in self.regression_predictor_checkboxes
+                if checkbox.isChecked()
+            ]
+
+            if not dependent_variable:
+                QMessageBox.warning(
+                    self,
+                    "Brak zmiennej zależnej",
+                    "Wybierz zmienną zależną."
+                )
+                return
+
+            if dependent_variable in independent_variables:
+                QMessageBox.warning(
+                    self,
+                    "Nieprawidłowy wybór",
+                    "Zmienna zależna nie może być jednocześnie "
+                    "zmienną niezależną."
+                )
+                return
+
+            if len(independent_variables) < 2:
+                QMessageBox.warning(
+                    self,
+                    "Za mało zmiennych",
+                    "Wybierz co najmniej dwie "
+                    "zmienne niezależne."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+            formatter = ReportFormatter()
+
+            result = stats_engine.run_test(
+                test_id="linear_regression",
+                dataframe=self.clean_df,
+                dependent_var=dependent_variable,
+                variables=independent_variables,
+            )
+
+            text = formatter.format(
+                test_id="linear_regression",
+                result=result,
+                independent_var=independent_variables,
+                dependent_var=dependent_variable,
+            )
+
+            self.current_analysis_result = text
+            self.current_analysis_name = (
+                "Regresja liniowa"
+            )
+
+            self.recommended_test_output.setText(text)
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd regresji liniowej",
+                str(error)
+            )
 
     def show_mixed_relationship_question(self, mixed_type):
         self.clear_analysis_page()

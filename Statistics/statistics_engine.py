@@ -1,6 +1,7 @@
 
 import pandas as pd
 import pingouin as pg
+import statsmodels.api as sm
 
 from scipy.stats import (
     chi2_contingency,
@@ -156,9 +157,179 @@ class StatisticsEngine:
                 dependent_var
             )
 
+        if test_id == "linear_regression":
+            return self.linear_regression_test(
+                dataframe=dataframe,
+                dependent_variable=dependent_var,
+                independent_variables=variables,
+            )
+
         raise ValueError(
             f"Nieznany identyfikator testu: {test_id}"
         )
+
+    #Regresja
+    def linear_regression_test(
+            self,
+            dataframe,
+            dependent_variable,
+            independent_variables,
+    ):
+        if not dependent_variable:
+            raise ValueError(
+                "Nie podano zmiennej zależnej."
+            )
+
+        if not isinstance(
+                independent_variables,
+                (list, tuple)
+        ):
+            raise TypeError(
+                "Zmienne niezależne muszą zostać "
+                "przekazane jako lista lub krotka."
+            )
+
+        if len(independent_variables) < 2:
+            raise ValueError(
+                "Regresja wieloraka wymaga co najmniej "
+                "dwóch zmiennych niezależnych."
+            )
+
+        all_variables = [
+            dependent_variable,
+            *independent_variables,
+        ]
+
+        missing_columns = [
+            variable
+            for variable in all_variables
+            if variable not in dataframe.columns
+        ]
+
+        if missing_columns:
+            raise ValueError(
+                "Nie znaleziono kolumn: "
+                + ", ".join(missing_columns)
+            )
+
+        if dependent_variable in independent_variables:
+            raise ValueError(
+                "Zmienna zależna nie może znajdować się "
+                "na liście predyktorów."
+            )
+
+        data = dataframe[all_variables].copy()
+
+        for variable in all_variables:
+            data[variable] = pd.to_numeric(
+                data[variable],
+                errors="coerce"
+            )
+
+        data = data.dropna()
+
+        minimum_observations = (
+                len(independent_variables) + 2
+        )
+
+        if len(data) < minimum_observations:
+            raise ValueError(
+                "Za mało kompletnych obserwacji względem "
+                "liczby predyktorów."
+            )
+
+        y = data[dependent_variable]
+
+        x = data[list(independent_variables)]
+
+        # OLS nie dodaje wyrazu wolnego automatycznie.
+        x = sm.add_constant(
+            x,
+            has_constant="add"
+        )
+
+        model = sm.OLS(
+            y,
+            x
+        ).fit()
+
+        coefficients = []
+
+        for variable_name in model.params.index:
+            confidence_interval = model.conf_int().loc[
+                variable_name
+            ]
+
+            if variable_name == "const":
+                display_name = "Wyraz wolny"
+            else:
+                display_name = str(variable_name)
+
+            coefficients.append({
+                "zmienna": display_name,
+                "nazwa_techniczna": str(variable_name),
+                "wspolczynnik": float(
+                    model.params[variable_name]
+                ),
+                "blad_standardowy": float(
+                    model.bse[variable_name]
+                ),
+                "statystyka_t": float(
+                    model.tvalues[variable_name]
+                ),
+                "p_value": float(
+                    model.pvalues[variable_name]
+                ),
+                "ci_95_lower": float(
+                    confidence_interval.iloc[0]
+                ),
+                "ci_95_upper": float(
+                    confidence_interval.iloc[1]
+                ),
+                "istotne_statystycznie": bool(
+                    model.pvalues[variable_name] < 0.05
+                ),
+            })
+
+        result = {
+            "test": "linear_regression",
+            "zmienna_zalezna": dependent_variable,
+            "zmienne_niezalezne": list(
+                independent_variables
+            ),
+            "liczba_obserwacji": int(model.nobs),
+            "r_squared": float(model.rsquared),
+            "adjusted_r_squared": float(
+                model.rsquared_adj
+            ),
+            "statystyka_F": float(model.fvalue),
+            "p_value_modelu": float(
+                model.f_pvalue
+            ),
+            "df_model": float(model.df_model),
+            "df_residual": float(model.df_resid),
+            "aic": float(model.aic),
+            "bic": float(model.bic),
+            "wspolczynniki": coefficients,
+            "model_istotny": bool(
+                model.f_pvalue < 0.05
+            ),
+            "interpretacja": (
+                self.interpret_p_value(
+                    model.f_pvalue
+                )
+            ),
+        }
+
+        self.report.append(
+            "Wykonano regresję liniową dla zmiennej "
+            f"zależnej '{dependent_variable}' oraz "
+            "predyktorów: "
+            + ", ".join(independent_variables)
+            + "."
+        )
+
+        return result
 
     #Pearson
     def pearson_test(

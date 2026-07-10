@@ -103,13 +103,87 @@ class ReportFormatter:
                 independent_var,
                 dependent_var
             )
-
+        elif test_id == "linear_regression":
+            return self.format_linear_regression(
+                result,
+                independent_var,
+                dependent_var
+            )
 
         else:
             return (
                 f"Formatowanie testu „{test_id}” "
                 "zostanie dodane później."
             )
+
+    def format_linear_regression(
+            self,
+            result,
+            independent_var=None,
+            dependent_var=None,
+    ):
+        predictors = "\n".join(
+            f"- {variable}"
+            for variable
+            in result["zmienne_niezalezne"]
+        )
+
+        coefficient_lines = []
+
+        for coefficient in result["wspolczynniki"]:
+            coefficient_lines.append(
+                f"""
+    Zmienna: {coefficient['zmienna']}
+    B = {coefficient['wspolczynnik']:.4f}
+    SE = {coefficient['blad_standardowy']:.4f}
+    t = {coefficient['statystyka_t']:.4f}
+    p-value = {coefficient['p_value']:.4f}
+    95% CI: [
+    {coefficient['ci_95_lower']:.4f},
+    {coefficient['ci_95_upper']:.4f}
+    ]
+    """.strip()
+            )
+
+        coefficients_text = "\n\n".join(
+            coefficient_lines
+        )
+
+        return f"""
+    ========================================
+    REGRESJA LINIOWA WIELORAKA
+    ========================================
+
+    ZMIENNA ZALEŻNA:
+    {result['zmienna_zalezna']}
+
+    ZMIENNE NIEZALEŻNE:
+    {predictors}
+
+    LICZBA OBSERWACJI:
+    {result['liczba_obserwacji']}
+
+    DOPASOWANIE MODELU:
+    R² = {result['r_squared']:.4f}
+    Skorygowane R² = {result['adjusted_r_squared']:.4f}
+
+    TEST CAŁEGO MODELU:
+    F = {result['statystyka_F']:.4f}
+    df modelu = {result['df_model']:.0f}
+    df reszt = {result['df_residual']:.0f}
+    p-value = {result['p_value_modelu']:.4f}
+
+    KRYTERIA INFORMACYJNE:
+    AIC = {result['aic']:.4f}
+    BIC = {result['bic']:.4f}
+
+    WSPÓŁCZYNNIKI:
+    {coefficients_text}
+
+    INTERPRETACJA CAŁEGO MODELU:
+    {result['interpretacja']}
+    ========================================
+    """.strip()
 
     def format_pearson(
             self,
