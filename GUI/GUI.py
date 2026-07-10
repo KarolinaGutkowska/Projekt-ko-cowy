@@ -1,25 +1,37 @@
-import pandas as pd
 import html
 
-from PyQt6.QtWidgets import (
-    QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel,
-    QFileDialog, QTextEdit, QLineEdit, QTableWidget,
-    QTableWidgetItem, QMessageBox, QComboBox, QStackedWidget,
-    QCheckBox, QScrollArea, QTableView
-)
-from PyQt6.QtCore import QAbstractTableModel, Qt
-from PyQt6.QtCore import QTimer
-from PyQt6.QtPrintSupport import QPrinter
-from PyQt6.QtGui import QPageSize
+import pandas as pd
 
-from PyQt6.QtCore import QMarginsF
+from PyQt6.QtCore import (
+    QAbstractTableModel,
+    QMarginsF,
+    Qt,
+)
 from PyQt6.QtGui import (
-    QTextDocument,
-    QPageSize,
-    QPageLayout,
     QFont,
+    QPageLayout,
+    QPageSize,
+    QTextDocument,
 )
 from PyQt6.QtPrintSupport import QPrinter
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QStackedWidget,
+    QTableView,
+    QTableWidget,
+    QTableWidgetItem,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from HUBA.huba import HUBA
 from Statistics.statistics_engine import StatisticsEngine
@@ -300,13 +312,6 @@ class MainWindow(QWidget):
         layout.addWidget(back_button)
         layout.addStretch()
 
-    def show_analysis_not_ready(self, analysis_name):
-        QMessageBox.information(
-            self,
-            "W budowie",
-            f"{analysis_name} zostanie dodana "
-            "w następnym etapie."
-        )
 
     def calculate_moderation(self):
         try:
@@ -1225,14 +1230,6 @@ class MainWindow(QWidget):
 
         return "\n".join(lines)
 
-    def show_advanced_relationship_not_ready(self):
-        QMessageBox.information(
-            self,
-            "W budowie",
-            "Analizy dla więcej niż dwóch zmiennych "
-            "zostaną dodane w kolejnym etapie."
-        )
-
 
     def show_relationship_variable_types_question(self, variables_count):
         self.relationship_variables_count = variables_count
@@ -2147,17 +2144,33 @@ class MainWindow(QWidget):
                     categorical_columns
                 )
 
+
             elif test_id in [
+
                 "mann_whitney",
+
                 "t_independent",
+
+                "welch_t",
+
                 "anova",
+
+                "welch_anova",
+
                 "kruskal_wallis",
+
             ]:
+
                 self.independent_variable_combo.addItems(
+
                     categorical_columns
+
                 )
+
                 self.dependent_variable_combo.addItems(
+
                     numeric_columns
+
                 )
 
             else:
@@ -2817,7 +2830,9 @@ class MainWindow(QWidget):
 
         back_button = QPushButton("Wstecz")
         back_button.setMinimumHeight(40)
-        back_button.clicked.connect(self.build_analysis_page)
+        back_button.clicked.connect(
+            self.return_to_analysis_start
+        )
 
 
         layout.addWidget(title)

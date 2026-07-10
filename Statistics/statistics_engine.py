@@ -1,27 +1,27 @@
-
+import numpy as np
 import pandas as pd
 import pingouin as pg
 import statsmodels.api as sm
-import numpy as np
 
 from scipy.stats import (
     chi2_contingency,
     f_oneway,
+    friedmanchisquare,
     kruskal,
     levene,
     mannwhitneyu,
+    pearsonr,
     shapiro,
+    spearmanr,
     ttest_ind,
-    wilcoxon,
     ttest_rel,
-    friedmanchisquare
+    wilcoxon,
 )
 from statsmodels.stats.contingency_tables import (
     cochrans_q,
     mcnemar,
 )
 from statsmodels.stats.oneway import anova_oneway
-from scipy.stats import pearsonr, spearmanr
 
 class StatisticsEngine:
 
@@ -1668,8 +1668,7 @@ class StatisticsEngine:
                 "Brak kompletnych par obserwacji."
             )
 
-        first_values = data[first_variable].unique()
-        second_values = data[second_variable].unique()
+
 
         all_values = list(
             pd.unique(
@@ -2047,8 +2046,7 @@ class StatisticsEngine:
             grouping_variable,
             dependent_variable,
     ):
-        from scipy.stats import levene
-        import pandas as pd
+
 
         data = dataframe[
             [grouping_variable, dependent_variable]
@@ -2086,8 +2084,6 @@ class StatisticsEngine:
             grouping_variable,
             dependent_variable,
     ):
-        from scipy.stats import ttest_ind
-        import pandas as pd
 
         data = dataframe[
             [grouping_variable, dependent_variable]
@@ -2434,14 +2430,14 @@ class StatisticsEngine:
         )
 
         result = {
-            "test": "Chi-Square",
+            "test": "chi_square",
             "kolumna_1": column1,
             "kolumna_2": column2,
-            "chi2": statistic,
-            "p_value": p_value,
-            "degrees_of_freedom": dof,
-            "istotne_statystycznie": p_value < 0.05,
-            "interpretacja": self.interpret_p_value(p_value)
+            "chi2": float(statistic),
+            "p_value": float(p_value),
+            "degrees_of_freedom": int(dof),
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
         }
 
         self.report.append(
@@ -2476,10 +2472,10 @@ class StatisticsEngine:
         result = {
             "test": "Shapiro-Wilk",
             "kolumna": numeric_column,
-            "statystyka_W": statistic,
-            "p_value": p_value,
-            "rozkład_normalny": p_value >= 0.05,
-            "interpretacja": self.interpret_p_value_normality(p_value)
+            "statystyka_W": float(statistic),
+            "p_value": float(p_value),
+            "rozkład_normalny": bool(p_value >= 0.05),
+            "interpretacja": self.interpret_p_value_normality(p_value),
         }
 
         self.report.append(

@@ -7,16 +7,24 @@ class TestSelector:
         normal=None,
         equal_variances=None,
     ):
+        if groups_count < 2:
+            raise ValueError(
+                "Liczba grup musi wynosić co najmniej 2."
+            )
+
         if dependent_type == "nominal":
             return "chi_square"
 
         if dependent_type == "ordinal":
             if groups_count == 2:
                 return "mann_whitney"
+
             return "kruskal_wallis"
 
         if dependent_type != "quantitative":
-            raise ValueError("Nieznany typ zmiennej zależnej.")
+            raise ValueError(
+                "Nieznany typ zmiennej zależnej."
+            )
 
         if normal is None:
             return "normality_required"
@@ -24,6 +32,7 @@ class TestSelector:
         if not normal:
             if groups_count == 2:
                 return "mann_whitney"
+
             return "kruskal_wallis"
 
         if equal_variances is None:
@@ -32,6 +41,7 @@ class TestSelector:
         if groups_count == 2:
             if equal_variances:
                 return "t_independent"
+
             return "welch_t"
 
         if equal_variances:
@@ -40,10 +50,10 @@ class TestSelector:
         return "welch_anova"
 
     def select_dependent_test(
-            self,
-            groups_count,
-            dependent_type,
-            normal=None,
+        self,
+        groups_count,
+        dependent_type,
+        normal=None,
     ):
         if groups_count not in (2, 3):
             raise ValueError(
@@ -66,11 +76,7 @@ class TestSelector:
             raise ValueError(
                 "Nieznany typ zmiennej zależnej."
             )
-        if dependent_type == "nominal":
-            if groups_count == 2:
-                return "mcnemar"
 
-            return "cochran_q"
         if normal is None:
             return "dependent_normality_required"
 

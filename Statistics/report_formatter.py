@@ -1,3 +1,4 @@
+from textwrap import dedent
 class ReportFormatter:
 
     def format(self, test_id, result, independent_var, dependent_var):
@@ -128,12 +129,89 @@ class ReportFormatter:
                 independent_var,
                 dependent_var
             )
+        elif test_id == "repeated_measures_anova":
+            return self.format_repeated_measures_anova(result)
 
         else:
             return (
                 f"Formatowanie testu „{test_id}” "
                 "zostanie dodane później."
             )
+
+    def clean_text(self, text):
+        return dedent(text).strip()
+
+    def format_p_value(self, p_value):
+        if p_value is None:
+            return "p = brak danych"
+
+        if p_value < 0.001:
+            return "p < 0.001"
+
+        return f"p = {p_value:.3f}"
+
+    def format_repeated_measures_anova(
+            self,
+            result,
+            independent_var=None,
+            dependent_var=None,
+    ):
+        measurements = "\n".join(
+            f"- {measurement}"
+            for measurement in result["pomiary"]
+        )
+
+        if result["sphericity_met"]:
+            sphericity_text = (
+                "Założenie sferyczności zostało spełnione. "
+                "Zastosowano niekorygowaną wartość p."
+            )
+        else:
+            sphericity_text = (
+                "Założenie sferyczności nie zostało spełnione. "
+                "Zastosowano korektę Greenhouse’a-Geissera."
+            )
+
+        return self.clean_text(f"""
+            ========================================
+            ANOVA Z POWTARZANYMI POMIARAMI
+            ========================================
+
+            PORÓWNYWANE POMIARY:
+            {measurements}
+
+            LICZBA POMIARÓW:
+            {result['liczba_pomiarow']}
+
+            LICZBA KOMPLETNYCH PRZYPADKÓW:
+            {result['liczba_kompletnych_przypadkow']}
+
+            WYNIKI ANOVA:
+            F = {result['statystyka_F']:.4f}
+            df1 = {result['df_1']:.2f}
+            df2 = {result['df_2']:.2f}
+            {self.format_p_value(result['p_value'])}
+
+            WIELKOŚĆ EFEKTU:
+            uogólnione eta-kwadrat =
+            {result['effect_size_ng2']:.4f}
+
+            TEST SFERyczności MAUCHLY’EGO:
+            W = {result['mauchly_W']:.4f}
+            χ² = {result['mauchly_chi2']:.4f}
+            df = {result['mauchly_df']}
+            {self.format_p_value(result['mauchly_p_value'])}
+
+            EPSILON GREENHOUSE’A-GEISSERA:
+            {result['greenhouse_geisser_epsilon']:.4f}
+
+            OCENA SFERyczności:
+            {sphericity_text}
+
+            INTERPRETACJA:
+            {result['interpretacja']}
+            ========================================
+        """)
 
     def format_moderation(
             self,

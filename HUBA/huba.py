@@ -1,13 +1,20 @@
-import pandas as pd
-from pathlib import Path
 import io
-import msoffcrypto
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
 from datetime import datetime
+from pathlib import Path
+from xml.sax.saxutils import escape
+
+import msoffcrypto
+import pandas as pd
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import (
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
 
 
 class HUBA:
@@ -21,46 +28,87 @@ class HUBA:
         self.rows_after = 0
         self.columns_after = 0
     #Wczytywanie plików
-    def load_data(self, file_path, sheet_name=0, password=None):
+    def load_data(
+            self,
+            file_path,
+            sheet_name=0,
+            password=None,
+    ):
         path = Path(file_path)
 
         if not path.exists():
-            raise FileNotFoundError(f"Nie znaleziono pliku: {file_path}")
+            raise FileNotFoundError(
+                f"Nie znaleziono pliku: {file_path}"
+            )
 
-        if path.suffix.lower() == ".csv":
+        suffix = path.suffix.lower()
+
+        if suffix == ".csv":
             try:
-                df = pd.read_csv(path, sep=None, engine="python")
+                df = pd.read_csv(
+                    path,
+                    sep=None,
+                    engine="python",
+                )
             except UnicodeDecodeError:
-                df = pd.read_csv(path, sep=None, engine="python", encoding="latin1")
+                df = pd.read_csv(
+                    path,
+                    sep=None,
+                    engine="python",
+                    encoding="latin1",
+                )
 
             self.report.append("Wczytano plik CSV.")
-            self.input_file = str(file_path)
-            self.rows_before = df.shape[0]
-            self.columns_before = df.shape[1]
 
-        elif path.suffix.lower() in [".xlsx", ".xls"]:
+        elif suffix in {".xlsx", ".xls"}:
             if password:
                 decrypted = io.BytesIO()
 
-                with open(path, "rb") as file:
+                with path.open("rb") as file:
                     office_file = msoffcrypto.OfficeFile(file)
                     office_file.load_key(password=password)
                     office_file.decrypt(decrypted)
 
-                df = pd.read_excel(decrypted, sheet_name=sheet_name)
-                self.report.append("Wczytano zabezpieczony hasłem plik Excel.")
+                decrypted.seek(0)
+
+                df = pd.read_excel(
+                    decrypted,
+                    sheet_name=sheet_name,
+                )
+
+                self.report.append(
+                    "Wczytano zabezpieczony hasłem plik Excel."
+                )
             else:
-                df = pd.read_excel(path, sheet_name=sheet_name)
-                self.report.append("Wczytano plik Excel.")
+                df = pd.read_excel(
+                    path,
+                    sheet_name=sheet_name,
+                )
+
+                self.report.append(
+                    "Wczytano plik Excel."
+                )
 
         else:
-            raise ValueError("Obsługiwane formaty to tylko: .csv, .xlsx, .xls")
+            raise ValueError(
+                "Obsługiwane formaty to: .csv, .xlsx i .xls."
+            )
 
         if df.empty:
-            raise ValueError("Plik jest pusty lub nie zawiera danych.")
+            raise ValueError(
+                "Plik jest pusty lub nie zawiera danych."
+            )
 
-        self.report.append(f"Liczba wierszy: {df.shape[0]}")
-        self.report.append(f"Liczba kolumn: {df.shape[1]}")
+        self.input_file = str(path)
+        self.rows_before = int(df.shape[0])
+        self.columns_before = int(df.shape[1])
+
+        self.report.append(
+            f"Liczba wierszy: {self.rows_before}"
+        )
+        self.report.append(
+            f"Liczba kolumn: {self.columns_before}"
+        )
 
         return df
     #Zamiana przecinków na kropki
@@ -85,28 +133,33 @@ class HUBA:
         return df
     #Usuwanie kolumn z brakami powyżej 50%
     def remove_sparse_columns(self, df, threshold=0.5):
-        rows = len(df)
+        if df.empty:
+            return df
+
         columns_to_remove = []
 
         for column in df.columns:
-            missing = df[column].isna().sum()
-            missing_ratio = missing / rows
+            missing = int(df[column].isna().sum())
+            missing_ratio = missing / len(df)
 
             if missing_ratio > threshold:
                 columns_to_remove.append(column)
 
                 self.report.append(
-                    f"Usunięto kolumnę '{column}' - "
-                    f"{missing} braków ({missing_ratio:.1%})"
+                    f"Usunięto kolumnę '{column}' — "
+                    f"{missing} braków ({missing_ratio:.1%})."
                 )
 
-        df = df.drop(columns=columns_to_remove)
-
-        self.report.append(
-            f"Usunięto {len(columns_to_remove)} kolumn z ponad {threshold:.0%} braków."
+        cleaned_df = df.drop(
+            columns=columns_to_remove
         )
 
-        return df
+        self.report.append(
+            f"Usunięto {len(columns_to_remove)} kolumn "
+            f"z ponad {threshold:.0%} braków."
+        )
+
+        return cleaned_df
     #Usuwanie duplikatów
     def remove_duplicates(self, df):
         duplicates_count = df.duplicated().sum()
@@ -188,15 +241,20 @@ class HUBA:
 
     # Zapisywanie raportu
     def save_report(self, report_file):
-        with open(report_file, "w", encoding="utf-8") as file:
+        report_path = Path(report_file)
+        report_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        with report_path.open(
+                "w",
+                encoding="utf-8",
+        ) as file:
             file.write("=== RAPORT HUBA ===\n\n")
 
             for line in self.report:
-                file.write(line + "\n")
-
-        self.report.append(
-            f"Zapisano raport do pliku: {report_file}"
-        )
+                file.write(f"{line}\n")
 
     #Usuwanie pustych wierszy
     def remove_empty_rows(self, df):
@@ -265,34 +323,42 @@ class HUBA:
 
         # Wykonane operacje
         elements.append(
-            Paragraph("<b>Wykonane operacje:</b>", styles["Heading2"])
+            Paragraph(
+                "<b>Wykonane operacje:</b>",
+                styles["Heading2"],
+            )
         )
 
         data = [["Lp.", "Operacja"]]
 
         for i, line in enumerate(self.report, start=1):
-            data.append([str(i), line])
+            safe_text = escape(str(line))
 
-        table = Table(data, colWidths=[40, 430])
+            data.append([
+                str(i),
+                Paragraph(
+                    safe_text,
+                    styles["Normal"],
+                ),
+            ])
+
+        table = Table(
+            data,
+            colWidths=[40, 430],
+        )
 
         table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.darkblue),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-
             ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-
             ("BACKGROUND", (0, 1), (-1, -1), colors.whitesmoke),
-
             ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
             ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-
             ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
-
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE")
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ]))
 
         elements.append(table)
-
         elements.append(Spacer(1, 25))
 
         elements.append(
