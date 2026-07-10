@@ -9,6 +9,7 @@ from scipy.stats import (
     mannwhitneyu,
     shapiro,
     ttest_ind,
+    wilcoxon
 )
 
 from statsmodels.stats.oneway import anova_oneway
@@ -83,6 +84,13 @@ class StatisticsEngine:
 
         if test_id == "kruskal_wallis":
             return self.kruskal_wallis_test(
+                dataframe,
+                independent_var,
+                dependent_var
+            )
+
+        if test_id == "wilcoxon":
+            return self.wilcoxon_test(
                 dataframe,
                 independent_var,
                 dependent_var
@@ -176,6 +184,68 @@ class StatisticsEngine:
             f"Wykonano test Shapiro-Wilka w grupach dla "
             f"zmiennej '{dependent_variable}' względem "
             f"zmiennej grupującej '{grouping_variable}'."
+        )
+
+        return result
+
+    #Wilcoxon
+    def wilcoxon_test(
+            self,
+            dataframe,
+            first_variable,
+            second_variable,
+    ):
+        data = dataframe[
+            [first_variable, second_variable]
+        ].copy()
+
+        data[first_variable] = pd.to_numeric(
+            data[first_variable],
+            errors="coerce"
+        )
+
+        data[second_variable] = pd.to_numeric(
+            data[second_variable],
+            errors="coerce"
+        )
+
+        data = data.dropna()
+
+        if len(data) < 2:
+            raise ValueError(
+                "Test Wilcoxona wymaga co najmniej dwóch "
+                "kompletnych par obserwacji."
+            )
+
+        differences = (
+                data[first_variable] - data[second_variable]
+        )
+
+        if (differences == 0).all():
+            raise ValueError(
+                "Wszystkie różnice między pomiarami wynoszą zero."
+            )
+
+        statistic, p_value = wilcoxon(
+            data[first_variable],
+            data[second_variable],
+            alternative="two-sided",
+        )
+
+        result = {
+            "test": "wilcoxon",
+            "pomiar_1": first_variable,
+            "pomiar_2": second_variable,
+            "liczba_par": int(len(data)),
+            "statystyka_W": float(statistic),
+            "p_value": float(p_value),
+            "istotne_statystycznie": bool(p_value < 0.05),
+            "interpretacja": self.interpret_p_value(p_value),
+        }
+
+        self.report.append(
+            f"Wykonano test Wilcoxona dla "
+            f"'{first_variable}' i '{second_variable}'."
         )
 
         return result

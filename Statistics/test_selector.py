@@ -38,3 +38,45 @@ class TestSelector:
             return "anova"
 
         return "welch_anova"
+
+    def select_dependent_test(
+            self,
+            groups_count,
+            dependent_type,
+            normal=None,
+    ):
+        if groups_count not in (2, 3):
+            raise ValueError(
+                "Nieprawidłowa liczba porównywanych pomiarów."
+            )
+
+        if dependent_type == "nominal":
+            if groups_count == 2:
+                return "mcnemar"
+
+            return "cochran_q"
+
+        if dependent_type == "ordinal":
+            if groups_count == 2:
+                return "wilcoxon"
+
+            return "friedman"
+
+        if dependent_type != "quantitative":
+            raise ValueError(
+                "Nieznany typ zmiennej zależnej."
+            )
+
+        if normal is None:
+            return "dependent_normality_required"
+
+        if groups_count == 2:
+            if normal:
+                return "t_paired"
+
+            return "wilcoxon"
+
+        if normal:
+            return "repeated_measures_anova"
+
+        return "friedman"

@@ -314,10 +314,35 @@ class MainWindow(QWidget):
         self.compare_variable_type = variable_type
 
         if self.compare_dependency == "dependent":
-            QMessageBox.information(
-                self,
-                "W budowie",
-                "Próby zależne zostaną dodane w kolejnym etapie."
+            test_id = self.test_selector.select_dependent_test(
+                groups_count=self.compare_groups_count,
+                dependent_type=self.compare_variable_type,
+            )
+
+            if test_id == "dependent_normality_required":
+                self.show_dependent_quantitative_normality()
+                return
+
+            display_names = {
+                "mcnemar": "Test McNemara",
+                "wilcoxon": "Test Wilcoxona",
+                "cochran_q": "Test Q Cochrana",
+                "friedman": "Test Friedmana",
+            }
+
+            display_name = display_names.get(test_id)
+
+            if display_name is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak testu",
+                    f"Nie znaleziono nazwy dla testu: {test_id}"
+                )
+                return
+
+            self.show_dependent_test(
+                test_id,
+                display_name
             )
             return
 
@@ -677,6 +702,149 @@ class MainWindow(QWidget):
 
         layout.addWidget(back_button)
         layout.addStretch()
+
+    def show_dependent_test(self, test_id, display_name):
+        self.clear_analysis_page()
+        layout = self.analysis_page.layout()
+
+        title = QLabel("Rekomendowany test:")
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            padding: 10px;
+        """)
+
+        test_label = QLabel(display_name)
+        test_label.setStyleSheet("""
+            font-size: 20px;
+            padding: 10px;
+        """)
+
+        test_label.setWordWrap(True)
+
+        self.dependent_first_variable_combo = QComboBox()
+        self.dependent_second_variable_combo = QComboBox()
+
+        if self.clean_df is not None:
+            numeric_columns, categorical_columns = (
+                self.get_numeric_and_categorical_columns()
+            )
+
+            if test_id == "mcnemar":
+                columns = categorical_columns
+            else:
+                columns = numeric_columns
+
+            self.dependent_first_variable_combo.addItems(columns)
+            self.dependent_second_variable_combo.addItems(columns)
+
+            if self.dependent_second_variable_combo.count() > 1:
+                self.dependent_second_variable_combo.setCurrentIndex(1)
+
+        calculate_button = QPushButton("Oblicz statystyki")
+        calculate_button.setMinimumHeight(45)
+        calculate_button.clicked.connect(
+            lambda: self.calculate_dependent_test(
+                test_id,
+                display_name
+            )
+        )
+
+        add_to_report_button = QPushButton("Dodaj do raportu")
+        add_to_report_button.setMinimumHeight(45)
+        add_to_report_button.clicked.connect(
+            self.add_current_results_to_report
+        )
+
+        back_button = QPushButton("Wstecz")
+        back_button.setMinimumHeight(40)
+        back_button.clicked.connect(
+            self.show_compare_groups_question_1
+        )
+
+        self.recommended_test_output = QTextEdit()
+        self.recommended_test_output.setReadOnly(True)
+
+        layout.addWidget(title)
+        layout.addWidget(test_label)
+
+        layout.addWidget(QLabel("Pierwszy pomiar:"))
+        layout.addWidget(self.dependent_first_variable_combo)
+
+        layout.addWidget(QLabel("Drugi pomiar:"))
+        layout.addWidget(self.dependent_second_variable_combo)
+
+        layout.addWidget(calculate_button)
+        layout.addWidget(add_to_report_button)
+
+        layout.addWidget(QLabel("Wyniki:"))
+        layout.addWidget(self.recommended_test_output)
+
+        layout.addWidget(back_button)
+        layout.addStretch()
+
+    def calculate_dependent_test(self, test_id, display_name):
+        try:
+            if self.clean_df is None:
+                QMessageBox.warning(
+                    self,
+                    "Brak danych",
+                    "Najpierw wczytaj plik."
+                )
+                return
+
+            first_variable = (
+                self.dependent_first_variable_combo.currentText()
+            )
+
+            second_variable = (
+                self.dependent_second_variable_combo.currentText()
+            )
+
+            if not first_variable or not second_variable:
+                QMessageBox.warning(
+                    self,
+                    "Brak zmiennych",
+                    "Wybierz oba pomiary."
+                )
+                return
+
+            if first_variable == second_variable:
+                QMessageBox.warning(
+                    self,
+                    "Nieprawidłowy wybór",
+                    "Pierwszy i drugi pomiar muszą być różnymi kolumnami."
+                )
+                return
+
+            stats_engine = StatisticsEngine()
+            formatter = ReportFormatter()
+
+            result = stats_engine.run_test(
+                test_id,
+                self.clean_df,
+                first_variable,
+                second_variable,
+            )
+
+            text = formatter.format(
+                test_id,
+                result,
+                first_variable,
+                second_variable,
+            )
+
+            self.current_analysis_result = text
+            self.current_analysis_name = display_name
+
+            self.recommended_test_output.setText(text)
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Błąd obliczeń",
+                str(error)
+            )
 
     def calculate_recommended_test(self, test_id, display_name):
         try:

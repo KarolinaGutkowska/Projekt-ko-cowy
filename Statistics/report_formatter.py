@@ -53,6 +53,14 @@ class ReportFormatter:
                 dependent_var
             )
 
+        elif test_id == "wilcoxon":
+            return self.format_wilcoxon(
+                result,
+                independent_var,
+                dependent_var
+            )
+
+
         else:
             return (
                 f"Formatowanie testu „{test_id}” "
@@ -277,3 +285,32 @@ INTERPRETACJA:
 {result['interpretacja']}
 ========================================
 """.strip()
+
+    def format_wilcoxon(
+            self,
+            result,
+            first_variable,
+            second_variable
+    ):
+        return f"""
+    ========================================
+    TEST WILCOXONA DLA PRÓB ZALEŻNYCH
+    ========================================
+
+    PIERWSZY POMIAR:
+    {first_variable}
+
+    DRUGI POMIAR:
+    {second_variable}
+
+    LICZBA KOMPLETNYCH PAR:
+    {result['liczba_par']}
+
+    WYNIKI TESTU:
+    W = {result['statystyka_W']:.4f}
+    p-value = {result['p_value']:.4f}
+
+    INTERPRETACJA:
+    {result['interpretacja']}
+    ========================================
+    """.strip()
